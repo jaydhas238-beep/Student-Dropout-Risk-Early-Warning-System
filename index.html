@@ -1,1408 +1,987 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BeaconEWS — Student Dropout Risk Early Warning System</title>
-  <!-- Tailwind CSS via CDN for zero-build GitHub Pages deployment -->
+  <title>EduGuard EWS — Student Dropout Risk Early Warning System</title>
+
+  <!-- Tailwind CSS CDN (Zero build step required for GitHub Pages) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+
+  <!-- Google Fonts: Inter (Clean UI) & JetBrains Mono (Numbers/Roll Nos) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
 
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
             mono: ['"JetBrains Mono"', 'monospace'],
-          },
-          colors: {
-            obsidian: {
-              950: '#07090E',
-              900: '#0B0F17',
-              850: '#101622',
-              800: '#161E2E',
-              700: '#1E293B',
-            },
-            telemetry: {
-              coral: '#F43F5E',
-              amber: '#F59E0B',
-              sky: '#38BDF8',
-              emerald: '#10B981',
-            }
           }
         }
       }
     };
   </script>
 
+  <!-- =====================================================================
+       SECTION 1: CUSTOM CSS STYLES
+  ====================================================================== -->
   <style>
-    /* Custom telemetry grid & glassmorphism refinements */
     body {
-      background-color: #07090E;
-      color: #F1F5F9;
-      background-image:
-        radial-gradient(circle at 15% 10%, rgba(245, 158, 11, 0.06) 0%, transparent 38%),
-        radial-gradient(circle at 85% 15%, rgba(244, 63, 94, 0.06) 0%, transparent 35%),
-        linear-gradient(to right, rgba(148, 163, 184, 0.04) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
-      background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
-      overflow-x: hidden;
+      background-color: #f8fafc;
+      color: #0f172a;
     }
 
-    .glass-panel {
-      background: rgba(16, 22, 34, 0.78);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid rgba(148, 163, 184, 0.12);
-      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.55);
-    }
-
-    .glass-panel-hover {
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-    .glass-panel-hover:hover {
-      border-color: rgba(245, 158, 11, 0.32);
-      box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.7);
-    }
-
-    /* Custom Range Sliders for Explainable AI Simulator */
-    input[type="range"].telemetry-slider {
+    /* Crisp Range Slider Styling */
+    input[type="range"].academic-slider {
       -webkit-appearance: none;
       appearance: none;
       width: 100%;
       height: 6px;
-      background: #1E293B;
+      background: #e2e8f0;
       border-radius: 999px;
       outline: none;
     }
-    input[type="range"].telemetry-slider::-webkit-slider-thumb {
+    input[type="range"].academic-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
       width: 18px;
       height: 18px;
       border-radius: 50%;
-      background: #F59E0B;
+      background: #4f46e5;
       cursor: pointer;
-      border: 2px solid #0B0F17;
-      box-shadow: 0 0 12px rgba(245, 158, 11, 0.65);
-      transition: transform 0.15s ease, background-color 0.15s ease;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.4);
+      transition: transform 0.15s ease;
     }
-    input[type="range"].telemetry-slider::-webkit-slider-thumb:hover {
+    input[type="range"].academic-slider::-webkit-slider-thumb:hover {
       transform: scale(1.15);
-      background: #FBBF24;
     }
 
-    /* Scrollbar styling */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #0B0F17;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #1E293B;
-      border-radius: 999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #334155;
-    }
-
-    @keyframes pulseBeacon {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.45; transform: scale(1.35); }
-    }
-    .beacon-dot {
-      animation: pulseBeacon 2.2s infinite ease-in-out;
+    /* Smooth modal transition */
+    .modal-backdrop {
+      background-color: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(4px);
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col lg:flex-row antialiased selection:bg-amber-500/30 selection:text-amber-200">
+<body class="min-h-screen flex flex-col antialiased">
 
-  <!-- Toast Notification Banner (Replaces alert() cleanly) -->
+  <!-- Toast Notification Container (Replaces browser alert()) -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-  <!-- Left Navigation Sidebar (Desktop) / Top Header (Mobile) -->
-  <aside class="w-full lg:w-72 lg:min-h-screen glass-panel border-b lg:border-b-0 lg:border-r border-slate-800/80 flex flex-col justify-between z-30 shrink-0">
-    <div>
-      <!-- Brand Header -->
-      <div class="p-5 sm:p-6 flex items-center justify-between lg:justify-start gap-3.5 border-b border-slate-800/70">
-        <div class="flex items-center gap-3.5">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-rose-500/20 border border-amber-500/40 flex items-center justify-center relative shadow-inner">
-            <!-- Custom SVG Beacon Logo -->
-            <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <circle cx="12" cy="12" r="3" fill="currentColor" />
-              <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14" stroke-linecap="round"/>
-            </svg>
-            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 beacon-dot"></span>
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="font-extrabold tracking-tight text-lg text-white">Beacon<span class="text-amber-400">EWS</span></span>
-              <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 border border-amber-500/20">v2.4</span>
-            </div>
-            <p class="text-xs text-slate-400">Retention Telemetry Core</p>
-          </div>
+  <!-- =====================================================================
+       SECTION 2: TOP ACADEMIC HEADER BAR
+  ====================================================================== -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <!-- Project Logo & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm shrink-0">
+          <!-- Academic Shield / Radar Icon -->
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
-
-        <!-- Quick Add Student CTA on Mobile -->
-        <button onclick="openAddStudentModal()" class="lg:hidden px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs transition flex items-center gap-1.5">
-          <span>+ Enroll</span>
-        </button>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight">
+              EduGuard <span class="text-indigo-600">EWS</span>
+            </h1>
+            <span class="hidden sm:inline-block text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+              College Project
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 hidden sm:block">Student Dropout Risk Early Warning System</p>
+        </div>
       </div>
 
-      <!-- Navigation Menu -->
-      <nav class="p-3 sm:p-4 flex lg:flex-col gap-1.5 overflow-x-auto">
-        <button onclick="switchView('overview')" id="nav-overview" class="nav-btn active flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium transition whitespace-nowrap bg-amber-500/15 text-amber-300 border border-amber-500/30">
-          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>
+      <!-- Viva / Presentation Quick Actions -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button onclick="openFormulaModal()" class="px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs sm:text-sm font-semibold transition flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
-          <span>Cohort Radar &amp; Watchlist</span>
+          <span>How Risk Score Works</span>
         </button>
 
-        <button onclick="switchView('simulator')" id="nav-simulator" class="nav-btn flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 border border-transparent transition whitespace-nowrap">
-          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke-linecap="round"/>
-          </svg>
-          <span>Live Risk Simulator (XAI)</span>
+        <button onclick="resetSampleData()" class="px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-xs font-medium transition" title="Restore 8 default students">
+          Reset Demo
         </button>
-
-        <button onclick="switchView('data')" id="nav-data" class="nav-btn flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 border border-transparent transition whitespace-nowrap">
-          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span>CSV Batch Import &amp; Export</span>
-        </button>
-      </nav>
+      </div>
     </div>
+  </header>
 
-    <!-- Bottom Telemetry Status & Actions (Desktop) -->
-    <div class="hidden lg:flex flex-col gap-3 p-5 border-t border-slate-800/70">
-      <div class="p-3.5 rounded-xl bg-obsidian-950/80 border border-slate-800/90">
-        <div class="flex items-center justify-between text-xs mb-1.5">
-          <span class="text-slate-400 font-medium">Term Telemetry Sync</span>
-          <span class="font-mono text-emerald-400 flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> LIVE
+  <!-- =====================================================================
+       MAIN DASHBOARD CONTAINER (ONE CLEAR, SCANNABLE PAGE)
+  ====================================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+
+    <!-- -------------------------------------------------------------------
+         PART 1: TOP KPI SUMMARY ROW (4 CLEAN CARDS)
+    -------------------------------------------------------------------- -->
+    <section aria-label="Class Overview KPIs" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- KPI 1: Total Students -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Students</span>
+          <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </span>
         </div>
-        <p class="text-[11px] text-slate-500 leading-relaxed">
-          Fall Semester • Week 12 of 16. Automated early-warning model calibrated on attendance, LMS velocity &amp; bursar holds.
-        </p>
+        <div id="kpiTotal" class="mt-3 text-3xl font-extrabold font-mono text-slate-900">8</div>
+        <p class="mt-1 text-xs text-slate-500">Monitored across 4 departments</p>
       </div>
 
-      <button onclick="openAddStudentModal()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/15 transition flex items-center justify-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
-        <span>Add Student to Cohort</span>
-      </button>
-
-      <button onclick="resetDemoData()" class="w-full py-2 px-3 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-medium transition">
-        Reset Sample Cohort Data
-      </button>
-    </div>
-  </aside>
-
-  <!-- Main Workspace Area -->
-  <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
-
-    <!-- Top Context Header -->
-    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-      <div>
-        <div class="flex items-center gap-2 text-xs font-mono text-amber-400/90 uppercase tracking-wider mb-1">
-          <span>Academic Success Command Center</span>
-          <span>•</span>
-          <span id="currentSemesterLabel">FALL COHORT 2026</span>
+      <!-- KPI 2: High Risk Students -->
+      <div class="bg-white rounded-2xl border border-red-200 p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-red-600">High Risk Alerts</span>
+          <span class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </span>
         </div>
-        <h1 id="pageTitle" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-          Cohort Radar &amp; Early Warning Watchlist
-        </h1>
+        <div id="kpiHighRisk" class="mt-3 text-3xl font-extrabold font-mono text-red-600">3</div>
+        <p class="mt-1 text-xs text-slate-500">Risk Score ≥ 65% (Urgent Action)</p>
       </div>
 
-      <div class="flex items-center gap-2.5 self-start sm:self-auto">
-        <button onclick="exportCohortCSV()" class="px-3.5 py-2 rounded-xl glass-panel hover:border-slate-600 text-xs font-semibold text-slate-200 flex items-center gap-2 transition">
-          <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>Export Report (.CSV)</span>
-        </button>
-      </div>
-    </header>
-
-    <!-- =====================================================================
-         VIEW 1: COHORT RADAR & EARLY WARNING WATCHLIST
-    ====================================================================== -->
-    <section id="view-overview" class="space-y-6">
-      <!-- KPI Telemetry Strip -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <!-- KPI 1 -->
-        <div class="glass-panel glass-panel-hover rounded-2xl p-5 relative overflow-hidden">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Monitored Cohort</span>
-            <span class="p-2 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            </span>
-          </div>
-          <div class="flex items-baseline gap-2.5">
-            <span id="kpiTotalStudents" class="text-3xl font-extrabold font-mono text-white">12</span>
-            <span class="text-xs font-mono text-emerald-400">+2 active this term</span>
-          </div>
-          <p class="text-xs text-slate-500 mt-1.5">Undergraduate &amp; First-Gen Track</p>
+      <!-- KPI 3: Medium Risk Students -->
+      <div class="bg-white rounded-2xl border border-amber-200 p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-amber-600">Medium Risk Watch</span>
+          <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </span>
         </div>
-
-        <!-- KPI 2 -->
-        <div class="glass-panel glass-panel-hover rounded-2xl p-5 relative overflow-hidden border-rose-500/25">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold uppercase tracking-wider text-rose-300">Critical Risk Alerts</span>
-            <span class="p-2 rounded-lg bg-rose-500/15 text-rose-400 border border-rose-500/30">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            </span>
-          </div>
-          <div class="flex items-baseline gap-2.5">
-            <span id="kpiCriticalCount" class="text-3xl font-extrabold font-mono text-rose-400">4</span>
-            <span id="kpiElevatedText" class="text-xs font-mono text-amber-400">+3 Elevated</span>
-          </div>
-          <p class="text-xs text-slate-500 mt-1.5">Immediate advisor triage required</p>
-        </div>
-
-        <!-- KPI 3 -->
-        <div class="glass-panel glass-panel-hover rounded-2xl p-5 relative overflow-hidden">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Intervention Completion</span>
-            <span class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-            </span>
-          </div>
-          <div class="flex items-baseline gap-2.5">
-            <span id="kpiInterventionRate" class="text-3xl font-extrabold font-mono text-emerald-400">68%</span>
-            <span class="text-xs font-mono text-slate-400" id="kpiInterventionFraction">24/35 tasks</span>
-          </div>
-          <p class="text-xs text-slate-500 mt-1.5">Outreach playbooks executed</p>
-        </div>
-
-        <!-- KPI 4 -->
-        <div class="glass-panel glass-panel-hover rounded-2xl p-5 relative overflow-hidden">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Cohort Avg Attendance</span>
-            <span class="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </span>
-          </div>
-          <div class="flex items-baseline gap-2.5">
-            <span id="kpiAvgAttendance" class="text-3xl font-extrabold font-mono text-white">76.4%</span>
-            <span class="text-xs font-mono text-amber-400">Target ≥ 85%</span>
-          </div>
-          <p class="text-xs text-slate-500 mt-1.5">Rolling 12-week lecture check-ins</p>
-        </div>
+        <div id="kpiMediumRisk" class="mt-3 text-3xl font-extrabold font-mono text-amber-600">2</div>
+        <p class="mt-1 text-xs text-slate-500">Risk Score 35% – 64% (Monitor)</p>
       </div>
 
-      <!-- Visual Telemetry Row: Risk Distribution Donut & Multi-Factor Cohort Radar -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- Left 5 Cols: Risk Stratification Breakdown -->
-        <div class="lg:col-span-5 glass-panel rounded-2xl p-5 sm:p-6 flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <h2 class="text-base font-bold text-white">Cohort Risk Stratification</h2>
-              <span class="text-[11px] font-mono text-slate-400">LIVE DISTRIBUTION</span>
-            </div>
-            <p class="text-xs text-slate-400 mb-5">Click any tier below to filter the watchlist table.</p>
-          </div>
-
-          <div class="flex flex-col sm:flex-row items-center justify-around gap-6 my-auto">
-            <!-- Custom SVG Donut Ring -->
-            <div class="relative w-44 h-44 shrink-0 flex items-center justify-center">
-              <svg id="cohortDonutSvg" viewBox="0 0 160 160" class="w-full h-full -rotate-90"></svg>
-              <div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                <span id="donutCenterScore" class="text-2xl font-extrabold font-mono text-white">54</span>
-                <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Avg Risk Idx</span>
-              </div>
-            </div>
-
-            <!-- Interactive Tier Legend -->
-            <div class="w-full space-y-2.5" id="tierLegendContainer">
-              <!-- Populated dynamically via JS -->
-            </div>
-          </div>
-
-          <div class="mt-5 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-            <span>Threshold: Critical ≥ 75 pts</span>
-            <button onclick="setTierFilter('ALL')" class="text-amber-400 hover:text-amber-300 font-semibold">Show All Students</button>
-          </div>
+      <!-- KPI 4: Average Class Attendance -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Avg Class Attendance</span>
+          <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
         </div>
+        <div id="kpiAvgAttendance" class="mt-3 text-3xl font-extrabold font-mono text-slate-900">74.8%</div>
+        <p class="mt-1 text-xs text-slate-500">University Minimum Requirement: 75%</p>
+      </div>
+    </section>
 
-        <!-- Right 7 Cols: Multi-Factor Telemetry Radar (Custom Canvas) -->
-        <div class="lg:col-span-7 glass-panel rounded-2xl p-5 sm:p-6 flex flex-col justify-between">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+    <!-- -------------------------------------------------------------------
+         PART 2: LIVE STUDENT RISK CALCULATOR & ENROLLMENT CARD
+    -------------------------------------------------------------------- -->
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-6 py-4 bg-slate-50/80 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-slate-900">Live Student Risk Calculator &amp; Enrollment</h2>
+          <p class="text-xs text-slate-500">Adjust sliders to test dropout risk in real time, then add the student to the monitoring table below.</p>
+        </div>
+        <span class="text-xs font-mono font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 self-start sm:self-auto">
+          Interactive Demo Tool
+        </span>
+      </div>
+
+      <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <!-- Left 7 Columns: Input Form & Sliders -->
+        <form id="studentCalcForm" onsubmit="addStudentFromCalculator(event)" class="lg:col-span-7 space-y-5">
+          <!-- Row 1: Roll No, Name, Department -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <h2 class="text-base font-bold text-white">Multi-Factor Risk Telemetry Radar</h2>
-              <p class="text-xs text-slate-400">Comparing <span class="text-rose-400 font-semibold">Critical Risk Cohort Avg</span> vs. <span class="text-emerald-400 font-semibold">Healthy Benchmark</span> across 5 signals</p>
+              <label for="inRoll" class="block text-xs font-semibold text-slate-700 mb-1">Roll No.</label>
+              <input id="inRoll" type="text" required placeholder="e.g., CS-109" value="CS-109"
+                class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
             </div>
-            <div class="flex items-center gap-3 text-xs font-mono">
-              <span class="flex items-center gap-1.5 text-rose-400"><span class="w-2.5 h-2.5 rounded-sm bg-rose-500/60 border border-rose-400"></span>Critical Avg</span>
-              <span class="flex items-center gap-1.5 text-emerald-400"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500/40 border border-emerald-400"></span>Benchmark</span>
+            <div>
+              <label for="inName" class="block text-xs font-semibold text-slate-700 mb-1">Student Name</label>
+              <input id="inName" type="text" required placeholder="e.g., Kabir Sharma" value="Kabir Sharma"
+                class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+            </div>
+            <div>
+              <label for="inDept" class="block text-xs font-semibold text-slate-700 mb-1">Department</label>
+              <select id="inDept" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500">
+                <option value="CSE">CSE</option>
+                <option value="IT">IT</option>
+                <option value="ENTC">ENTC</option>
+                <option value="Mechanical">Mechanical</option>
+              </select>
             </div>
           </div>
 
-          <div class="w-full h-60 sm:h-64 relative">
-            <canvas id="telemetryRadarCanvas" class="w-full h-full block"></canvas>
+          <!-- Row 2: Sliders (Attendance, CGPA, Assignments) -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- Attendance Slider -->
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+              <div class="flex justify-between items-center mb-1.5">
+                <label for="inAttendance" class="text-xs font-semibold text-slate-700">Attendance</label>
+                <span id="valAttendance" class="text-xs font-mono font-bold text-indigo-600">62%</span>
+              </div>
+              <input id="inAttendance" type="range" min="0" max="100" value="62" oninput="updateLiveCalculator()" class="academic-slider" />
+              <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                <span>0%</span><span>Min: 75%</span><span>100%</span>
+              </div>
+            </div>
+
+            <!-- CGPA Slider (/10) -->
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+              <div class="flex justify-between items-center mb-1.5">
+                <label for="inCgpa" class="text-xs font-semibold text-slate-700">CGPA (/10)</label>
+                <span id="valCgpa" class="text-xs font-mono font-bold text-indigo-600">5.6</span>
+              </div>
+              <input id="inCgpa" type="range" min="0" max="10" step="0.1" value="5.6" oninput="updateLiveCalculator()" class="academic-slider" />
+              <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                <span>0.0</span><span>Safe: 6.5+</span><span>10.0</span>
+              </div>
+            </div>
+
+            <!-- Assignments Slider -->
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+              <div class="flex justify-between items-center mb-1.5">
+                <label for="inAssignments" class="text-xs font-semibold text-slate-700">Assignments</label>
+                <span id="valAssignments" class="text-xs font-mono font-bold text-indigo-600">60%</span>
+              </div>
+              <input id="inAssignments" type="range" min="0" max="100" value="60" oninput="updateLiveCalculator()" class="academic-slider" />
+              <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                <span>0%</span><span>Target: 80%</span><span>100%</span>
+              </div>
+            </div>
           </div>
 
-          <div class="mt-3 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
-            <span>Primary Cohort Bottleneck: <strong id="topBottleneckLabel" class="text-amber-300 font-mono">LMS Weekly Engagement (-42%)</strong></span>
-            <button onclick="switchView('simulator')" class="text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1">
-              <span>Test What-If Scenarios in XAI Simulator</span>
-              <span>→</span>
-            </button>
-          </div>
-        </div>
-      </div>
+          <!-- Row 3: Academic Backlogs / Fee Hold Toggle + Submit Button -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+            <div class="flex-1">
+              <label for="inStatusFlag" class="block text-xs font-semibold text-slate-700 mb-1">Backlogs / Fee Hold Status</label>
+              <select id="inStatusFlag" onchange="updateLiveCalculator()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500">
+                <option value="none">None (Clear Academic &amp; Fee Record)</option>
+                <option value="backlogs" selected>1–2 Active Subject Backlogs (+15% Risk)</option>
+                <option value="fee_hold">Pending Tuition Fee Hold (+15% Risk)</option>
+                <option value="both">Both Backlogs &amp; Fee Hold (+25% Risk)</option>
+              </select>
+            </div>
 
-      <!-- Searchable & Filterable Early Warning Watchlist Table -->
-      <div class="glass-panel rounded-2xl overflow-hidden">
-        <div class="p-5 sm:p-6 border-b border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="sm:self-end">
+              <button type="submit" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-sm transition flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Add Student to Table</span>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Right 5 Columns: Live Risk Preview Box -->
+        <div id="livePreviewCard" class="lg:col-span-5 rounded-2xl border-2 border-red-200 bg-red-50/40 p-5 sm:p-6 flex flex-col justify-between transition-colors duration-200">
           <div>
-            <h2 class="text-lg font-bold text-white">Early Warning Watchlist</h2>
-            <p class="text-xs text-slate-400">Select any student row to inspect 12-week trajectory &amp; execute intervention checklist.</p>
-          </div>
-
-          <!-- Search & Tier Filter Pills -->
-          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div class="relative">
-              <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input id="watchlistSearch" type="text" placeholder="Search name, ID, major, driver..." oninput="renderWatchlist()" class="w-full sm:w-64 pl-9 pr-4 py-2 rounded-xl bg-obsidian-950 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500/60 transition" />
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Live Prediction Output</span>
+              <span id="previewBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                HIGH RISK
+              </span>
             </div>
 
-            <div class="flex items-center gap-1.5 bg-obsidian-950 p-1 rounded-xl border border-slate-800 overflow-x-auto" id="filterPillGroup">
-              <button onclick="setTierFilter('ALL')" data-tier="ALL" class="tier-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white transition">All</button>
-              <button onclick="setTierFilter('Critical')" data-tier="Critical" class="tier-pill px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-rose-300 transition">Critical</button>
-              <button onclick="setTierFilter('Elevated')" data-tier="Elevated" class="tier-pill px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-amber-300 transition">Elevated</button>
-              <button onclick="setTierFilter('Watch')" data-tier="Watch" class="tier-pill px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-sky-300 transition">Watch</button>
-              <button onclick="setTierFilter('Stable')" data-tier="Stable" class="tier-pill px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-emerald-300 transition">Stable</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="border-b border-slate-800/90 bg-obsidian-950/60 text-[11px] font-mono uppercase tracking-wider text-slate-400">
-                <th class="py-3.5 px-5">Student &amp; Program</th>
-                <th class="py-3.5 px-4">Risk Score</th>
-                <th class="py-3.5 px-4">Attendance</th>
-                <th class="py-3.5 px-4">GPA / LMS</th>
-                <th class="py-3.5 px-4">Primary Risk Drivers</th>
-                <th class="py-3.5 px-4">Outreach Status</th>
-                <th class="py-3.5 px-5 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody id="watchlistTableBody" class="divide-y divide-slate-800/60 text-sm">
-              <!-- Populated dynamically via JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- =====================================================================
-         VIEW 2: LIVE RISK SIMULATOR (EXPLAINABLE AI / SHAP WATERFALL)
-    ====================================================================== -->
-    <section id="view-simulator" class="hidden space-y-6">
-      <div class="glass-panel rounded-2xl p-5 sm:p-6 border-amber-500/20">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-800/80">
-          <div>
-            <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono mb-2">
-              <span>EXPLAINABLE AI ENGINE (XAI)</span>
-            </div>
-            <h2 class="text-xl font-bold text-white">Interactive Dropout Risk &amp; Intervention Simulator</h2>
-            <p class="text-xs sm:text-sm text-slate-400 mt-0.5">Adjust student behavioral &amp; academic telemetry sliders to inspect real-time risk sensitivity and SHAP-style factor contributions.</p>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <select id="simPresetSelect" onchange="loadStudentIntoSimulator(this.value)" class="px-3.5 py-2.5 rounded-xl bg-obsidian-950 border border-slate-700 text-xs font-medium text-slate-200 focus:outline-none focus:border-amber-400">
-              <option value="">Load student profile into simulator...</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
-          <!-- Left 6 Cols: Telemetry Controls -->
-          <div class="lg:col-span-6 space-y-5">
-            <!-- Slider 1: Attendance -->
-            <div class="p-4 rounded-xl bg-obsidian-950/75 border border-slate-800/90">
-              <div class="flex justify-between items-center mb-2">
-                <label for="simAttendance" class="text-sm font-semibold text-slate-200">Lecture Attendance Rate</label>
-                <span id="simAttendanceVal" class="font-mono text-sm font-bold text-amber-400">68%</span>
-              </div>
-              <input id="simAttendance" type="range" min="30" max="100" value="68" oninput="updateSimulator()" class="telemetry-slider" />
-              <div class="flex justify-between text-[11px] font-mono text-slate-500 mt-1.5">
-                <span>30% (Chronic Absentee)</span>
-                <span>Benchmark: 85%</span>
-                <span>100%</span>
-              </div>
+            <div class="flex items-baseline gap-3 my-2">
+              <span id="previewScore" class="text-5xl font-extrabold font-mono text-red-600">74%</span>
+              <span class="text-xs font-medium text-slate-500">Dropout Risk Probability</span>
             </div>
 
-            <!-- Slider 2: GPA -->
-            <div class="p-4 rounded-xl bg-obsidian-950/75 border border-slate-800/90">
-              <div class="flex justify-between items-center mb-2">
-                <label for="simGpa" class="text-sm font-semibold text-slate-200">Current Cumulative GPA (4.0 Scale)</label>
-                <span id="simGpaVal" class="font-mono text-sm font-bold text-amber-400">2.15</span>
-              </div>
-              <input id="simGpa" type="range" min="1.0" max="4.0" step="0.05" value="2.15" oninput="updateSimulator()" class="telemetry-slider" />
-              <div class="flex justify-between text-[11px] font-mono text-slate-500 mt-1.5">
-                <span>1.00 (Academic Probation)</span>
-                <span>Benchmark: 3.00</span>
-                <span>4.00</span>
-              </div>
-            </div>
-
-            <!-- Slider 3: LMS Logins -->
-            <div class="p-4 rounded-xl bg-obsidian-950/75 border border-slate-800/90">
-              <div class="flex justify-between items-center mb-2">
-                <label for="simLms" class="text-sm font-semibold text-slate-200">LMS Weekly Active Logins</label>
-                <span id="simLmsVal" class="font-mono text-sm font-bold text-amber-400">3 logins/wk</span>
-              </div>
-              <input id="simLms" type="range" min="0" max="20" step="1" value="3" oninput="updateSimulator()" class="telemetry-slider" />
-              <div class="flex justify-between text-[11px] font-mono text-slate-500 mt-1.5">
-                <span>0 (Disengaged)</span>
-                <span>Benchmark: 10/wk</span>
-                <span>20/wk</span>
-              </div>
-            </div>
-
-            <!-- Slider 4: Assignment Submission Rate -->
-            <div class="p-4 rounded-xl bg-obsidian-950/75 border border-slate-800/90">
-              <div class="flex justify-between items-center mb-2">
-                <label for="simAssignments" class="text-sm font-semibold text-slate-200">On-Time Assignment Completion</label>
-                <span id="simAssignmentsVal" class="font-mono text-sm font-bold text-amber-400">62%</span>
-              </div>
-              <input id="simAssignments" type="range" min="20" max="100" step="1" value="62" oninput="updateSimulator()" class="telemetry-slider" />
-              <div class="flex justify-between text-[11px] font-mono text-slate-500 mt-1.5">
-                <span>20%</span>
-                <span>Benchmark: 90%</span>
-                <span>100%</span>
-              </div>
-            </div>
-
-            <!-- Toggles: Financial Hold & Advisor Engagement -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <label class="p-4 rounded-xl bg-obsidian-950/75 border border-slate-800/90 flex items-center justify-between cursor-pointer hover:border-slate-700 transition">
-                <div>
-                  <span class="block text-sm font-semibold text-slate-200">Bursar / Aid Hold</span>
-                  <span class="text-xs text-slate-400">Unresolved tuition balance</span>
-                </div>
-                <input id="simFinancialHold" type="checkbox" checked onchange="updateSimulator()" class="w-5 h-5 accent-rose-500 rounded cursor-pointer" />
-              </label>
-
-              <label class="p-4 rounded-xl bg-obsidian-950/75 border border-slate-800/90 flex items-center justify-between cursor-pointer hover:border-slate-700 transition">
-                <div>
-                  <span class="block text-sm font-semibold text-slate-200">Peer / Advisor Sync</span>
-                  <span class="text-xs text-slate-400">Active mentorship check-in</span>
-                </div>
-                <input id="simMentorActive" type="checkbox" onchange="updateSimulator()" class="w-5 h-5 accent-emerald-500 rounded cursor-pointer" />
-              </label>
+            <!-- Factor Breakdown Mini Pills -->
+            <div id="previewFactors" class="flex flex-wrap gap-1.5 mt-3">
+              <!-- Populated via JS -->
             </div>
           </div>
 
-          <!-- Right 6 Cols: Circular Risk Gauge + SHAP Contribution Waterfall + Dynamic Playbook -->
-          <div class="lg:col-span-6 flex flex-col justify-between space-y-6">
-            <!-- Top Row: Gauge & SHAP Waterfall -->
-            <div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center bg-obsidian-950/80 p-5 rounded-2xl border border-slate-800">
-              <!-- Circular Gauge SVG -->
-              <div class="sm:col-span-5 flex flex-col items-center justify-center">
-                <div class="relative w-40 h-40 flex items-center justify-center">
-                  <svg viewBox="0 0 160 160" class="w-full h-full -rotate-90">
-                    <circle cx="80" cy="80" r="64" fill="none" stroke="#1E293B" stroke-width="14" />
-                    <circle id="simGaugeArc" cx="80" cy="80" r="64" fill="none" stroke="#F43F5E" stroke-width="14" stroke-linecap="round" stroke-dasharray="402.12" stroke-dashoffset="100" class="transition-all duration-300" />
-                  </svg>
-                  <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <span id="simScoreDisplay" class="text-4xl font-extrabold font-mono text-white">78</span>
-                    <span id="simTierBadge" class="mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40">CRITICAL</span>
-                  </div>
-                </div>
-                <span class="text-[11px] font-mono text-slate-400 mt-2">DROPOUT PROPENSITY</span>
-              </div>
-
-              <!-- SHAP Factor Contribution Waterfall -->
-              <div class="sm:col-span-7 space-y-2.5">
-                <div class="flex items-center justify-between">
-                  <h3 class="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold">Factor Contribution (SHAP)</h3>
-                  <span class="text-[10px] font-mono text-slate-500">Base: 28 pts</span>
-                </div>
-                <div id="shapWaterfallContainer" class="space-y-2">
-                  <!-- Populated dynamically via JS -->
-                </div>
-              </div>
-            </div>
-
-            <!-- Dynamic Tailored Intervention Playbook -->
-            <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 to-obsidian-950 border border-slate-800 flex-1">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                  <span>Recommended AI Intervention Playbook</span>
-                </h3>
-                <span class="text-[11px] font-mono text-amber-400">AUTO-GENERATED</span>
-              </div>
-              <ul id="simPlaybookList" class="space-y-2.5 text-xs text-slate-300">
-                <!-- Populated dynamically via JS -->
-              </ul>
-            </div>
+          <div class="mt-5 pt-4 border-t border-slate-200/80">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Recommended Mentor Action</div>
+            <p id="previewRecommendation" class="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+              Schedule immediate faculty mentor counseling and enroll student in remedial classes.
+            </p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- =====================================================================
-         VIEW 3: CSV BATCH IMPORT & EXPORT (GITHUB PAGES STATIC DEMO READY)
-    ====================================================================== -->
-    <section id="view-data" class="hidden space-y-6">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Upload / Batch Import Card -->
-        <div class="glass-panel rounded-2xl p-6 flex flex-col justify-between">
+    <!-- -------------------------------------------------------------------
+         PART 3: VISUAL ANALYTICS ROW (2 SIMPLE, ULTRA-CLEAR SVG CHARTS)
+    -------------------------------------------------------------------- -->
+    <section aria-label="Visual Risk Analytics" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Chart 1: Risk Level Distribution (Horizontal Bar Breakdown) -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">1. Class Risk Level Distribution</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Breakdown of students across High, Medium, and Low dropout risk categories.</p>
+        </div>
+
+        <div id="riskDistributionChart" class="my-6 space-y-4">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <span>Click any category to filter the table below</span>
+          <button onclick="setRiskFilter('ALL')" class="text-indigo-600 hover:text-indigo-700 font-semibold">Show All</button>
+        </div>
+      </div>
+
+      <!-- Chart 2: Attendance % vs. CGPA (/10) Danger Zone Scatter Plot -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
           <div>
-            <span class="text-xs font-mono uppercase tracking-wider text-amber-400">Static Ingestion Pipeline</span>
-            <h2 class="text-xl font-bold text-white mt-1">Batch Import Student Cohort (.CSV)</h2>
-            <p class="text-xs sm:text-sm text-slate-400 mt-1.5 leading-relaxed">
-              Upload a CSV roster containing student academic &amp; LMS metrics. BeaconEWS runs client-side risk scoring immediately in your browser with zero server uploads.
-            </p>
-
-            <!-- Dropzone -->
-            <label for="csvFileInput" class="mt-5 border-2 border-dashed border-slate-700 hover:border-amber-400/70 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer bg-obsidian-950/60 transition group">
-              <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 transition mb-3">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </div>
-              <span class="text-sm font-semibold text-white">Click to choose a CSV file</span>
-              <span class="text-xs text-slate-500 mt-1">Expected columns: id, name, major, year, attendance, gpa, lmsLogins, assignments, financialHold</span>
-              <input id="csvFileInput" type="file" accept=".csv" onchange="handleCSVUpload(event)" class="hidden" />
-            </label>
+            <h3 class="text-base font-bold text-slate-900">2. Attendance % vs. CGPA Danger Zone</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Students below <span class="font-semibold text-red-600">75% Attendance</span> &amp; <span class="font-semibold text-red-600">6.0 CGPA</span> enter the red zone.</p>
           </div>
-
-          <div class="mt-6 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
-            <button onclick="downloadSampleCSVTemplate()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-amber-300 border border-amber-500/25 transition flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span>Download Sample CSV Template</span>
-            </button>
-            <span class="text-[11px] font-mono text-slate-500">100% Client-Side Privacy</span>
+          <div class="flex items-center gap-3 text-[11px] font-medium">
+            <span class="flex items-center gap-1 text-red-600"><span class="w-2.5 h-2.5 rounded-full bg-red-600"></span>High</span>
+            <span class="flex items-center gap-1 text-amber-600"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>Med</span>
+            <span class="flex items-center gap-1 text-emerald-600"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>Low</span>
           </div>
         </div>
 
-        <!-- Export & Schema Documentation Card -->
-        <div class="glass-panel rounded-2xl p-6 flex flex-col justify-between">
-          <div>
-            <span class="text-xs font-mono uppercase tracking-wider text-emerald-400">Reporting &amp; Audit</span>
-            <h2 class="text-xl font-bold text-white mt-1">Export Active Watchlist &amp; Risk Scores</h2>
-            <p class="text-xs sm:text-sm text-slate-400 mt-1.5 leading-relaxed">
-              Generate a timestamped CSV snapshot including calculated risk scores, risk tiers, top risk drivers, and intervention completion progress for department leadership.
-            </p>
-
-            <div class="mt-5 p-4 rounded-xl bg-obsidian-950 border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto">
-              <div class="text-slate-500 mb-1.5">// Sample CSV Schema Format</div>
-              <pre class="text-[11px] leading-relaxed text-amber-200/90">id,name,major,year,attendance,gpa,lmsLogins,assignments,financialHold
-STU-1091,Elena Rostova,Computer Science,Sophomore,62,2.10,2,58,true
-STU-1092,Marcus Vance,Mechanical Eng,Freshman,71,2.45,5,70,false</pre>
-            </div>
-          </div>
-
-          <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-            <button onclick="exportCohortCSV()" class="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/15">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span>Download Full Watchlist Report (.CSV)</span>
-            </button>
-          </div>
+        <div class="w-full overflow-hidden">
+          <svg id="scatterChartSvg" viewBox="0 0 480 220" class="w-full h-56 select-none"></svg>
         </div>
+      </div>
+    </section>
+
+    <!-- -------------------------------------------------------------------
+         PART 4: STUDENT EARLY WARNING LIST TABLE
+    -------------------------------------------------------------------- -->
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="p-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Student Early Warning List</h2>
+          <p class="text-xs text-slate-500">Sorted automatically from highest risk to lowest risk. Click <strong>View / Advise</strong> to log mentor counseling.</p>
+        </div>
+
+        <!-- Search, Filter Pills, and Export CSV -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          <!-- Search Input -->
+          <div class="relative flex-1 sm:flex-initial">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="searchInput" type="text" placeholder="Search name or roll no..." oninput="renderStudentTable()"
+              class="w-full sm:w-52 pl-9 pr-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+          </div>
+
+          <!-- Filter Buttons -->
+          <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200" id="filterButtons">
+            <button onclick="setRiskFilter('ALL')" data-filter="ALL" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-900 shadow-sm transition">All</button>
+            <button onclick="setRiskFilter('High Risk')" data-filter="High Risk" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-red-600 transition">High</button>
+            <button onclick="setRiskFilter('Medium Risk')" data-filter="Medium Risk" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-amber-600 transition">Medium</button>
+            <button onclick="setRiskFilter('Low Risk')" data-filter="Low Risk" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-emerald-600 transition">Low</button>
+          </div>
+
+          <!-- Export CSV Button -->
+          <button onclick="exportToCSV()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Export CSV</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Responsive Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <th class="py-3.5 px-5">Roll No.</th>
+              <th class="py-3.5 px-4">Student Name</th>
+              <th class="py-3.5 px-4">Dept</th>
+              <th class="py-3.5 px-4">Attendance</th>
+              <th class="py-3.5 px-4">CGPA (/10)</th>
+              <th class="py-3.5 px-4">Tasks</th>
+              <th class="py-3.5 px-4">Risk Score &amp; Level</th>
+              <th class="py-3.5 px-4">Key Risk Factor</th>
+              <th class="py-3.5 px-5 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="studentTableBody" class="divide-y divide-slate-200 text-sm">
+            <!-- Populated dynamically via JS -->
+          </tbody>
+        </table>
       </div>
     </section>
 
   </main>
 
-  <!-- =====================================================================
-       SLIDE-OVER STUDENT CASE DRAWER & INTERVENTION TRACKER
-  ====================================================================== -->
-  <div id="drawerBackdrop" onclick="closeStudentDrawer()" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-200"></div>
-
-  <aside id="studentCaseDrawer" class="fixed top-0 right-0 h-full w-full max-w-xl bg-obsidian-900 border-l border-slate-800 z-50 transform translate-x-full transition-transform duration-300 ease-out flex flex-col shadow-2xl">
-    <!-- Drawer Header -->
-    <div class="p-5 sm:p-6 border-b border-slate-800 flex items-start justify-between gap-4 bg-obsidian-950/80">
-      <div>
-        <div class="flex items-center gap-2.5 mb-1">
-          <span id="drawerStudentId" class="font-mono text-xs text-slate-400">STU-1042</span>
-          <span id="drawerRiskBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40">CRITICAL • 86</span>
-        </div>
-        <h2 id="drawerStudentName" class="text-xl font-extrabold text-white">Maya Lin-Kowalski</h2>
-        <p id="drawerStudentMeta" class="text-xs text-slate-400 mt-0.5">B.S. Data Science • Sophomore • First-Gen Scholar</p>
-      </div>
-      <button onclick="closeStudentDrawer()" class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition" aria-label="Close drawer">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
+  <!-- Simple Footer -->
+  <footer class="bg-white border-t border-slate-200 py-5 mt-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <span><strong>EduGuard EWS</strong> — Student Dropout Risk Early Warning System (Engineering College Project)</span>
+      <span>100% Client-Side HTML, CSS &amp; JavaScript • Hosted on GitHub Pages</span>
     </div>
-
-    <!-- Drawer Scrollable Body -->
-    <div class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
-      <!-- 4 Mini Telemetry Metrics -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="drawerMetricsGrid">
-        <!-- Populated dynamically -->
-      </div>
-
-      <!-- 12-Week Attendance & Academic Trajectory Sparkline -->
-      <div class="p-4 rounded-2xl bg-obsidian-950 border border-slate-800/90">
-        <div class="flex items-center justify-between mb-3">
-          <div>
-            <h3 class="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold">12-Week Trajectory Sparkline</h3>
-            <p class="text-[11px] text-slate-500">Weekly lecture attendance (%) &amp; quiz momentum</p>
-          </div>
-          <div class="flex items-center gap-3 text-[11px] font-mono">
-            <span class="flex items-center gap-1 text-amber-400"><span class="w-2 h-2 rounded-full bg-amber-400"></span>Attendance</span>
-            <span class="flex items-center gap-1 text-sky-400"><span class="w-2 h-2 rounded-full bg-sky-400"></span>Assessments</span>
-          </div>
-        </div>
-        <div class="w-full h-36">
-          <svg id="drawerSparklineSvg" viewBox="0 0 460 120" class="w-full h-full overflow-visible"></svg>
-        </div>
-      </div>
-
-      <!-- Primary Risk Drivers -->
-      <div>
-        <h3 class="text-xs font-mono uppercase tracking-wider text-slate-400 font-bold mb-2.5">Detected Early-Warning Triggers</h3>
-        <div id="drawerDriversList" class="flex flex-wrap gap-2">
-          <!-- Populated dynamically -->
-        </div>
-      </div>
-
-      <!-- Interactive Intervention Checklist (Persists in localStorage) -->
-      <div class="p-4 sm:p-5 rounded-2xl bg-obsidian-950/90 border border-slate-800">
-        <div class="flex items-center justify-between mb-3">
-          <div>
-            <h3 class="text-sm font-bold text-white">Actionable Intervention Checklist</h3>
-            <p class="text-xs text-slate-400">Toggle tasks as completed; changes persist automatically.</p>
-          </div>
-          <span id="drawerChecklistProgress" class="font-mono text-xs font-bold text-emerald-400">1/4 Done</span>
-        </div>
-
-        <div id="drawerChecklistContainer" class="space-y-2.5">
-          <!-- Populated dynamically -->
-        </div>
-      </div>
-
-      <!-- Counselor Case Notes -->
-      <div>
-        <h3 class="text-xs font-mono uppercase tracking-wider text-slate-400 font-bold mb-2.5">Advisor Case Notes</h3>
-        <div id="drawerNotesList" class="space-y-2.5 mb-3 max-h-44 overflow-y-auto">
-          <!-- Populated dynamically -->
-        </div>
-
-        <form onsubmit="addCaseNote(event)" class="flex gap-2">
-          <input id="newCaseNoteInput" type="text" required placeholder="Log outreach summary or advisor note..." class="flex-1 px-3.5 py-2.5 rounded-xl bg-obsidian-950 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400" />
-          <button type="submit" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shrink-0">
-            Log Note
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Drawer Footer -->
-    <div class="p-4 sm:p-5 border-t border-slate-800 bg-obsidian-950/90 flex items-center justify-between gap-3">
-      <button onclick="sendDrawerStudentToSimulator()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-sky-300 border border-sky-500/25 transition">
-        Open in XAI Simulator →
-      </button>
-      <button onclick="closeStudentDrawer()" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition">
-        Done
-      </button>
-    </div>
-  </aside>
+  </footer>
 
   <!-- =====================================================================
-       ADD STUDENT TO COHORT MODAL
+       MODAL 1: "HOW RISK SCORE IS CALCULATED" (VIVA EXPLANATION CARD)
   ====================================================================== -->
-  <div id="addStudentModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="glass-panel rounded-2xl w-full max-w-lg border border-slate-700 overflow-hidden shadow-2xl">
-      <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-obsidian-950/80">
-        <h3 class="text-lg font-bold text-white">Enroll Student into EWS Telemetry</h3>
-        <button onclick="closeAddStudentModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+  <div id="formulaModal" onclick="closeFormulaModal()" class="fixed inset-0 modal-backdrop z-50 hidden items-center justify-center p-4">
+    <div onclick="event.stopPropagation()" class="bg-white rounded-2xl border border-slate-200 max-w-xl w-full shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 bg-indigo-600 text-white flex items-center justify-between">
+        <h3 class="text-base font-bold">How Dropout Risk Score is Calculated (Rule-Based Model)</h3>
+        <button onclick="closeFormulaModal()" class="text-indigo-100 hover:text-white">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
-      <form onsubmit="handleAddStudentSubmit(event)" class="p-5 space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Full Name</label>
-            <input id="addName" type="text" required placeholder="e.g., Jordan Rivera" class="w-full px-3.5 py-2 rounded-xl bg-obsidian-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-amber-400" />
+      <div class="p-6 space-y-4 text-sm text-slate-700">
+        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+          EduGuard uses a <strong>transparent weighted scoring algorithm (0% to 100%)</strong> based on 4 key academic &amp; behavioral indicators tracked by colleges:
+        </p>
+
+        <div class="space-y-2.5 font-mono text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <div class="flex justify-between py-1 border-b border-slate-200">
+            <span class="font-semibold text-slate-800">1. Attendance Weight (Max 40 pts)</span>
+            <span class="text-indigo-600 font-bold">(85 - Attendance%) × 0.8</span>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Major / Program</label>
-            <input id="addMajor" type="text" required placeholder="e.g., B.S. Biology" class="w-full px-3.5 py-2 rounded-xl bg-obsidian-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-amber-400" />
+          <div class="flex justify-between py-1 border-b border-slate-200">
+            <span class="font-semibold text-slate-800">2. CGPA Weight (Max 30 pts)</span>
+            <span class="text-indigo-600 font-bold">(8.0 - CGPA) × 6.5</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-200">
+            <span class="font-semibold text-slate-800">3. Assignments Weight (Max 15 pts)</span>
+            <span class="text-indigo-600 font-bold">(85 - Assignments%) × 0.35</span>
+          </div>
+          <div class="flex justify-between py-1">
+            <span class="font-semibold text-slate-800">4. Backlogs / Fee Hold (Max 25 pts)</span>
+            <span class="text-indigo-600 font-bold">+15 pts (or +25 if both)</span>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Attendance %</label>
-            <input id="addAttendance" type="number" min="0" max="100" value="72" required class="w-full px-3 py-2 rounded-xl bg-obsidian-950 border border-slate-800 text-sm font-mono text-white focus:outline-none focus:border-amber-400" />
+        <div class="grid grid-cols-3 gap-2 text-center text-xs font-bold pt-1">
+          <div class="p-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
+            0% – 34%<br/><span class="font-normal">Low Risk</span>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">GPA (0-4)</label>
-            <input id="addGpa" type="number" step="0.05" min="0" max="4" value="2.35" required class="w-full px-3 py-2 rounded-xl bg-obsidian-950 border border-slate-800 text-sm font-mono text-white focus:outline-none focus:border-amber-400" />
+          <div class="p-2.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
+            35% – 64%<br/><span class="font-normal">Medium Risk</span>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">LMS / Wk</label>
-            <input id="addLms" type="number" min="0" max="30" value="4" required class="w-full px-3 py-2 rounded-xl bg-obsidian-950 border border-slate-800 text-sm font-mono text-white focus:outline-none focus:border-amber-400" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Tasks %</label>
-            <input id="addAssignments" type="number" min="0" max="100" value="68" required class="w-full px-3 py-2 rounded-xl bg-obsidian-950 border border-slate-800 text-sm font-mono text-white focus:outline-none focus:border-amber-400" />
+          <div class="p-2.5 rounded-xl bg-red-50 text-red-700 border border-red-200">
+            65% – 100%<br/><span class="font-normal">High Risk</span>
           </div>
         </div>
+      </div>
 
-        <div class="flex items-center justify-between p-3.5 rounded-xl bg-obsidian-950 border border-slate-800">
-          <div>
-            <span class="block text-xs font-semibold text-slate-200">Active Financial Aid / Bursar Hold</span>
-            <span class="text-[11px] text-slate-500">Adds +14 pts baseline retention risk weight</span>
-          </div>
-          <input id="addFinancialHold" type="checkbox" class="w-5 h-5 accent-rose-500 rounded cursor-pointer" />
-        </div>
-
-        <div class="flex items-center justify-end gap-2.5 pt-2">
-          <button type="button" onclick="closeAddStudentModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">Cancel</button>
-          <button type="submit" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20">Calculate Risk &amp; Enroll</button>
-        </div>
-      </form>
+      <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <button onclick="closeFormulaModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold">
+          Got It
+        </button>
+      </div>
     </div>
   </div>
 
   <!-- =====================================================================
-       APPLICATION LOGIC (SELF-CONTAINED VANILLA JS)
+       MODAL 2: STUDENT MENTOR ADVISORY & ACTION CHECKLIST MODAL
+  ====================================================================== -->
+  <div id="adviseModal" onclick="closeAdviseModal()" class="fixed inset-0 modal-backdrop z-50 hidden items-center justify-center p-4">
+    <div onclick="event.stopPropagation()" class="bg-white rounded-2xl border border-slate-200 max-w-lg w-full shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div>
+          <span id="modalRollNo" class="text-xs font-mono text-indigo-300">CS-101</span>
+          <h3 id="modalStudentName" class="text-lg font-bold">Student Name</h3>
+        </div>
+        <button onclick="closeAdviseModal()" class="text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5">
+        <!-- Metrics Summary Strip -->
+        <div id="modalMetricsRow" class="grid grid-cols-3 gap-3 text-center">
+          <!-- Populated via JS -->
+        </div>
+
+        <!-- Mentor Action Checklist -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">Mentor Action Checklist</h4>
+            <span id="modalCounselingBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+              Pending Action
+            </span>
+          </div>
+          <div id="modalChecklist" class="space-y-2">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- Mentor Remark Input -->
+        <div>
+          <label for="modalRemarkInput" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Faculty Mentor Remark</label>
+          <div class="flex gap-2">
+            <input id="modalRemarkInput" type="text" placeholder="e.g., Called parents & scheduled extra lab session..."
+              class="flex-1 px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:border-indigo-500" />
+            <button onclick="saveMentorRemark()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shrink-0">
+              Save Note
+            </button>
+          </div>
+          <p id="modalSavedRemark" class="mt-2 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200 hidden"></p>
+        </div>
+      </div>
+
+      <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <button onclick="closeAdviseModal()" class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       SECTION 3 & 4: JAVASCRIPT LOGIC (FORMULA + DASHBOARD RENDERING)
   ====================================================================== -->
   <script>
-    const STORAGE_KEY = 'beacon_ews_cohort_v2_4';
+    const STORAGE_KEY = 'eduguard_ews_college_v1';
 
-    // 12 Realistic & Diverse Student Records
-    const DEFAULT_STUDENTS = [
+    // 8 Pre-loaded Realistic Indian Engineering College Students
+    const SAMPLE_STUDENTS = [
       {
-        id: 'STU-1042',
-        name: 'Maya Lin-Kowalski',
-        major: 'B.S. Data Science',
-        year: 'Sophomore',
+        rollNo: 'CS-101',
+        name: 'Aarav Patel',
+        dept: 'CSE',
         attendance: 58,
-        gpa: 2.05,
-        lmsLogins: 2,
-        assignments: 54,
-        financialHold: true,
-        mentorActive: false,
-        weeklyAttendance: [92, 90, 86, 82, 76, 70, 68, 64, 60, 58, 55, 58],
-        weeklyScores: [84, 82, 79, 75, 70, 66, 62, 60, 57, 55, 52, 54],
-        interventions: [
-          { id: 'i1', text: 'Schedule urgent 1-on-1 Academic Advisor sync', done: true },
-          { id: 'i2', text: 'Send Financial Aid & Bursar emergency grant referral', done: false },
-          { id: 'i3', text: 'Assign CS/Data Science peer tutoring mentor', done: false },
-          { id: 'i4', text: 'Enable weekly LMS assignment milestone check-ins', done: false }
+        cgpa: 5.2,
+        assignments: 55,
+        statusFlag: 'both',
+        tasks: [
+          { text: 'Schedule 1-on-1 Faculty Mentor counseling session', done: true },
+          { text: 'Inform parents & arrange remedial backlog classes', done: false },
+          { text: 'Submit fee installment request to Accounts office', done: false }
         ],
-        notes: [
-          { date: 'Nov 14', author: 'Dr. S. Patel', text: 'Missed 3 consecutive linear algebra labs; flagged bursar hold of $1,450.' }
-        ]
+        remark: 'Met student; struggling with Data Structures & tuition delay.'
       },
       {
-        id: 'STU-1088',
-        name: 'Darius Thorne',
-        major: 'Mechanical Engineering',
-        year: 'Freshman',
-        attendance: 64,
-        gpa: 2.18,
-        lmsLogins: 3,
-        assignments: 61,
-        financialHold: true,
-        mentorActive: false,
-        weeklyAttendance: [95, 92, 88, 84, 79, 74, 72, 69, 65, 63, 62, 64],
-        weeklyScores: [81, 78, 76, 72, 68, 65, 64, 61, 59, 60, 58, 61],
-        interventions: [
-          { id: 'i1', text: 'Schedule urgent 1-on-1 Academic Advisor sync', done: true },
-          { id: 'i2', text: 'Coordinate Financial Aid hold resolution plan', done: true },
-          { id: 'i3', text: 'Enroll in First-Year Engineering study pod', done: false },
-          { id: 'i4', text: 'Mid-semester faculty progress check with Calculus I prof', done: false }
-        ],
-        notes: [
-          { date: 'Nov 16', author: 'A. Morales', text: 'Student working 28 hrs/wk off-campus; exploring work-study transition.' }
-        ]
-      },
-      {
-        id: 'STU-1104',
-        name: 'Sofia Al-Mansoor',
-        major: 'B.A. Economics',
-        year: 'Junior',
+        rollNo: 'ME-204',
+        name: 'Rohan Deshmukh',
+        dept: 'Mechanical',
         attendance: 61,
-        gpa: 2.32,
-        lmsLogins: 1,
-        assignments: 59,
-        financialHold: false,
-        mentorActive: false,
-        weeklyAttendance: [96, 94, 94, 90, 85, 78, 71, 66, 60, 58, 60, 61],
-        weeklyScores: [88, 86, 85, 80, 76, 71, 68, 63, 61, 59, 58, 59],
-        interventions: [
-          { id: 'i1', text: 'Wellness & Counseling outreach call (sudden LMS drop)', done: false },
-          { id: 'i2', text: 'Schedule 1-on-1 Advisor degree audit review', done: false },
-          { id: 'i3', text: 'Request deadline extension from Econometrics instructor', done: false }
+        cgpa: 5.8,
+        assignments: 62,
+        statusFlag: 'backlogs',
+        tasks: [
+          { text: 'Schedule 1-on-1 Faculty Mentor counseling session', done: false },
+          { text: 'Assign peer tutor for Thermodynamics backlog', done: false }
         ],
-        notes: [
-          { date: 'Nov 12', author: 'System EWS', text: 'Sharp 78% drop in LMS activity detected over past 14 days.' }
-        ]
+        remark: ''
       },
       {
-        id: 'STU-1119',
-        name: 'Caleb Okafor',
-        major: 'B.S. Nursing',
-        year: 'Sophomore',
-        attendance: 67,
-        gpa: 2.25,
-        lmsLogins: 4,
-        assignments: 64,
-        financialHold: true,
-        mentorActive: true,
-        weeklyAttendance: [90, 88, 85, 82, 80, 77, 74, 71, 69, 67, 66, 67],
-        weeklyScores: [79, 77, 75, 73, 70, 69, 67, 65, 64, 63, 64, 64],
-        interventions: [
-          { id: 'i1', text: 'Bursar payment plan counseling referral', done: true },
-          { id: 'i2', text: 'Clinical lab simulation peer mentor pairing', done: true },
-          { id: 'i3', text: 'Schedule Anatomy & Physiology tutoring block', done: false }
+        rollNo: 'EC-309',
+        name: 'Siddharth Rao',
+        dept: 'ENTC',
+        attendance: 64,
+        cgpa: 6.1,
+        assignments: 58,
+        statusFlag: 'fee_hold',
+        tasks: [
+          { text: 'Verify scholarship / fee hold status with admin', done: true },
+          { text: 'Weekly attendance tracking by class teacher', done: false }
         ],
-        notes: [
-          { date: 'Nov 15', author: 'K. Jenkins', text: 'Attended peer mentor session; motivated but stressed over clinical fees.' }
-        ]
+        remark: 'Scholarship verification pending; attendance improving this week.'
       },
       {
-        id: 'STU-1127',
-        name: 'Hannah Lindqvist',
-        major: 'B.S. Environmental Sci',
-        year: 'Freshman',
+        rollNo: 'IT-112',
+        name: 'Sneha Kulkarni',
+        dept: 'IT',
+        attendance: 72,
+        cgpa: 6.8,
+        assignments: 74,
+        statusFlag: 'backlogs',
+        tasks: [
+          { text: 'Review internal unit test marks with subject teacher', done: true },
+          { text: 'Ensure attendance stays above 75% before exam form', done: false }
+        ],
+        remark: ''
+      },
+      {
+        rollNo: 'CS-118',
+        name: 'Vikram Joshi',
+        dept: 'CSE',
         attendance: 74,
-        gpa: 2.58,
-        lmsLogins: 5,
-        assignments: 72,
-        financialHold: false,
-        mentorActive: false,
-        weeklyAttendance: [94, 92, 89, 86, 84, 81, 79, 77, 75, 74, 73, 74],
-        weeklyScores: [85, 83, 81, 79, 77, 75, 74, 72, 71, 72, 71, 72],
-        interventions: [
-          { id: 'i1', text: 'Assign First-Year Transition Peer Mentor', done: true },
-          { id: 'i2', text: 'Schedule 1-on-1 Advisor check-in before finals', done: false },
-          { id: 'i3', text: 'Recommend STEM Writing & Lab Report workshop', done: false }
+        cgpa: 7.1,
+        assignments: 70,
+        statusFlag: 'none',
+        tasks: [
+          { text: 'Send attendance warning notice (currently 74%)', done: false }
         ],
-        notes: [
-          { date: 'Nov 10', author: 'Dr. S. Patel', text: 'Gradual attendance drift in morning Chemistry lectures.' }
-        ]
+        remark: ''
       },
       {
-        id: 'STU-1135',
-        name: 'Mateo Castellanos',
-        major: 'Computer Science',
-        year: 'Junior',
-        attendance: 76,
-        gpa: 2.65,
-        lmsLogins: 4,
-        assignments: 71,
-        financialHold: true,
-        mentorActive: true,
-        weeklyAttendance: [91, 89, 88, 85, 82, 80, 78, 77, 76, 75, 76, 76],
-        weeklyScores: [82, 81, 80, 78, 76, 75, 74, 72, 71, 70, 71, 71],
-        interventions: [
-          { id: 'i1', text: 'Clear registration hold with Financial Aid office', done: true },
-          { id: 'i2', text: 'Algorithms homework study group check-in', done: true },
-          { id: 'i3', text: 'Confirm Spring course registration unlock', done: false }
+        rollNo: 'IT-125',
+        name: 'Priya Nair',
+        dept: 'IT',
+        attendance: 86,
+        cgpa: 8.4,
+        assignments: 90,
+        statusFlag: 'none',
+        tasks: [
+          { text: 'Encourage participation in Smart India Hackathon', done: true }
         ],
-        notes: [
-          { date: 'Nov 17', author: 'A. Morales', text: 'Submitted FAFSA verification docs; hold expected to lift Friday.' }
-        ]
+        remark: 'Consistent performer across all labs.'
       },
       {
-        id: 'STU-1142',
-        name: 'Priya Subramanian',
-        major: 'B.S. Biotechnology',
-        year: 'Sophomore',
-        attendance: 78,
-        gpa: 2.74,
-        lmsLogins: 6,
-        assignments: 75,
-        financialHold: false,
-        mentorActive: false,
-        weeklyAttendance: [93, 91, 90, 87, 85, 83, 81, 80, 79, 78, 77, 78],
-        weeklyScores: [86, 84, 83, 81, 79, 78, 77, 76, 75, 75, 74, 75],
-        interventions: [
-          { id: 'i1', text: 'Send Organic Chemistry supplemental instruction invite', done: true },
-          { id: 'i2', text: 'Bi-weekly advisor pulse survey', done: false }
-        ],
-        notes: [
-          { date: 'Nov 09', author: 'K. Jenkins', text: 'Minor dip following midterm week; responsive to email outreach.' }
-        ]
-      },
-      {
-        id: 'STU-1156',
-        name: 'Liam Gallagher-Ortiz',
-        major: 'B.A. Psychology',
-        year: 'Freshman',
-        attendance: 82,
-        gpa: 2.95,
-        lmsLogins: 7,
-        assignments: 83,
-        financialHold: false,
-        mentorActive: true,
-        weeklyAttendance: [92, 90, 88, 87, 86, 85, 84, 83, 82, 82, 81, 82],
-        weeklyScores: [84, 84, 83, 82, 83, 82, 81, 82, 83, 82, 83, 83],
-        interventions: [
-          { id: 'i1', text: 'Routine Freshman mid-term advisor check-in', done: true },
-          { id: 'i2', text: 'Share undergraduate research assistantship listings', done: true }
-        ],
-        notes: [
-          { date: 'Nov 05', author: 'Dr. S. Patel', text: 'Steady engagement; joined campus psychology club.' }
-        ]
-      },
-      {
-        id: 'STU-1163',
-        name: 'Amara Nwosu',
-        major: 'B.S. Finance',
-        year: 'Junior',
-        attendance: 85,
-        gpa: 3.12,
-        lmsLogins: 9,
-        assignments: 86,
-        financialHold: false,
-        mentorActive: true,
-        weeklyAttendance: [94, 93, 91, 90, 89, 88, 87, 86, 85, 85, 85, 85],
-        weeklyScores: [87, 87, 86, 85, 86, 85, 86, 86, 85, 86, 86, 86],
-        interventions: [
-          { id: 'i1', text: 'Verify internship credit paperwork', done: true }
-        ],
-        notes: [
-          { date: 'Nov 02', author: 'A. Morales', text: 'On track for Dean’s List consideration.' }
-        ]
-      },
-      {
-        id: 'STU-1170',
-        name: 'Noah Zimmerman',
-        major: 'B.S. Civil Engineering',
-        year: 'Senior',
+        rollNo: 'EC-315',
+        name: 'Ananya Verma',
+        dept: 'ENTC',
         attendance: 91,
-        gpa: 3.48,
-        lmsLogins: 12,
-        assignments: 94,
-        financialHold: false,
-        mentorActive: true,
-        weeklyAttendance: [96, 95, 94, 93, 92, 92, 91, 91, 90, 91, 91, 91],
-        weeklyScores: [91, 92, 91, 93, 92, 94, 93, 94, 93, 94, 94, 94],
-        interventions: [
-          { id: 'i1', text: 'Senior Capstone graduation audit cleared', done: true }
+        cgpa: 8.9,
+        assignments: 95,
+        statusFlag: 'none',
+        tasks: [
+          { text: 'Nominate for department peer-mentoring program', done: true }
         ],
-        notes: [
-          { date: 'Oct 28', author: 'K. Jenkins', text: 'Serving as peer mentor for two freshman engineering cohorts.' }
-        ]
+        remark: ''
       },
       {
-        id: 'STU-1181',
-        name: 'Chloe Deschamps',
-        major: 'B.S. Applied Math',
-        year: 'Sophomore',
-        attendance: 95,
-        gpa: 3.76,
-        lmsLogins: 15,
-        assignments: 97,
-        financialHold: false,
-        mentorActive: true,
-        weeklyAttendance: [98, 97, 97, 96, 96, 95, 95, 95, 94, 95, 95, 95],
-        weeklyScores: [95, 96, 95, 96, 97, 96, 97, 97, 96, 97, 97, 97],
-        interventions: [
-          { id: 'i1', text: 'Honors thesis advisor pairing completed', done: true }
+        rollNo: 'ME-219',
+        name: 'Neha Patil',
+        dept: 'Mechanical',
+        attendance: 84,
+        cgpa: 7.9,
+        assignments: 88,
+        statusFlag: 'none',
+        tasks: [
+          { text: 'Standard mid-semester mentor check-in completed', done: true }
         ],
-        notes: [
-          { date: 'Nov 01', author: 'Dr. S. Patel', text: 'Exemplary telemetry across all indicators.' }
-        ]
-      },
-      {
-        id: 'STU-1194',
-        name: 'Tariq Al-Jamil',
-        major: 'B.S. Cybersecurity',
-        year: 'Freshman',
-        attendance: 89,
-        gpa: 3.31,
-        lmsLogins: 14,
-        assignments: 91,
-        financialHold: false,
-        mentorActive: true,
-        weeklyAttendance: [95, 94, 93, 92, 91, 90, 90, 89, 89, 88, 89, 89],
-        weeklyScores: [89, 90, 89, 90, 91, 90, 91, 91, 90, 91, 91, 91],
-        interventions: [
-          { id: 'i1', text: 'First-year orientation & lab onboarding complete', done: true }
-        ],
-        notes: [
-          { date: 'Nov 04', author: 'A. Morales', text: 'High LMS engagement in network security labs.' }
-        ]
+        remark: ''
       }
     ];
 
-    // Application State
     let students = [];
-    let currentTierFilter = 'ALL';
-    let activeDrawerStudentId = null;
+    let currentFilter = 'ALL';
+    let activeStudentRoll = null;
 
-    // -----------------------------------------------------------------------
-    // EXPLAINABLE RISK SCORING MODEL (0 - 100 Scale)
-    // -----------------------------------------------------------------------
-    function calculateRiskProfile(s) {
-      const baseRisk = 22;
+    // ---------------------------------------------------------------------
+    // 3. TRANSPARENT RISK CALCULATION FORMULA (EASY TO EXPLAIN IN VIVA)
+    // ---------------------------------------------------------------------
+    function calculateStudentRisk(student) {
+      // 1. Attendance penalty (if below 85%)
+      const attPoints = Math.min(40, Math.max(0, (85 - student.attendance) * 0.8));
 
-      // Factor 1: Attendance deficit below 90%
-      const attDelta = Math.max(0, (90 - s.attendance) * 0.85);
-      // Factor 2: GPA deficit below 3.4
-      const gpaDelta = Math.max(0, (3.4 - s.gpa) * 14.5);
-      // Factor 3: LMS weekly logins below 10/wk
-      const lmsDelta = Math.max(0, (10 - s.lmsLogins) * 1.9);
-      // Factor 4: Assignment completion below 92%
-      const assignDelta = Math.max(0, (92 - s.assignments) * 0.45);
-      // Factor 5: Financial Hold (+13 pts)
-      const finDelta = s.financialHold ? 13 : 0;
-      // Factor 6: Active Mentor protective factor (-6 pts)
-      const mentorDelta = s.mentorActive ? -6 : 0;
+      // 2. CGPA penalty (if below 8.0 out of 10)
+      const cgpaPoints = Math.min(30, Math.max(0, (8.0 - student.cgpa) * 6.5));
 
-      const rawScore = baseRisk + attDelta + gpaDelta + lmsDelta + assignDelta + finDelta + mentorDelta;
-      const score = Math.max(4, Math.min(99, Math.round(rawScore)));
+      // 3. Assignments penalty (if below 85%)
+      const assignPoints = Math.min(15, Math.max(0, (85 - student.assignments) * 0.35));
 
-      let tier = 'Stable';
-      if (score >= 75) tier = 'Critical';
-      else if (score >= 55) tier = 'Elevated';
-      else if (score >= 38) tier = 'Watch';
+      // 4. Backlogs / Fee Hold penalty
+      let flagPoints = 0;
+      if (student.statusFlag === 'backlogs' || student.statusFlag === 'fee_hold') flagPoints = 15;
+      if (student.statusFlag === 'both') flagPoints = 25;
 
-      // Determine ranked risk drivers
-      const contributions = [
-        { key: 'Attendance Drop', pts: Math.round(attDelta), active: s.attendance < 80 },
-        { key: 'Grade / GPA Dip', pts: Math.round(gpaDelta), active: s.gpa < 2.75 },
-        { key: 'LMS Inactivity', pts: Math.round(lmsDelta), active: s.lmsLogins < 6 },
-        { key: 'Missing Tasks', pts: Math.round(assignDelta), active: s.assignments < 78 },
-        { key: 'Financial Hold', pts: finDelta, active: s.financialHold },
-        { key: 'Peer Mentor Buffer', pts: mentorDelta, active: s.mentorActive }
-      ];
+      // Total Risk Score clamped between 5% and 98%
+      const totalScore = Math.min(98, Math.max(5, Math.round(attPoints + cgpaPoints + assignPoints + flagPoints)));
 
-      const drivers = contributions
-        .filter(c => c.pts > 4 && c.key !== 'Peer Mentor Buffer')
-        .sort((a, b) => b.pts - a.pts)
-        .map(c => c.key);
+      // Determine Risk Category
+      let level = 'Low Risk';
+      if (totalScore >= 65) level = 'High Risk';
+      else if (totalScore >= 35) level = 'Medium Risk';
 
-      if (drivers.length === 0) drivers.push('On Track');
+      // Identify Main Risk Factor & Plain-English Recommendation
+      const factors = [];
+      if (student.attendance < 75) factors.push(`Low Attendance (${student.attendance}%)`);
+      if (student.cgpa < 6.5) factors.push(`Low CGPA (${Number(student.cgpa).toFixed(1)})`);
+      if (student.assignments < 70) factors.push(`Pending Tasks (${student.assignments}%)`);
+      if (student.statusFlag === 'backlogs') factors.push('Active Backlogs');
+      if (student.statusFlag === 'fee_hold') factors.push('Fee Hold');
+      if (student.statusFlag === 'both') factors.push('Backlogs + Fee Hold');
 
-      return { score, tier, drivers, contributions, baseRisk };
+      const keyFactor = factors.length > 0 ? factors[0] : 'Good Academic Standing';
+
+      let recommendation = 'Student is on track. Continue regular semester monitoring.';
+      if (level === 'High Risk') {
+        recommendation = `Urgent: ${factors.join(' & ') || 'Multiple risk signals'}. Schedule immediate faculty mentor meeting, notify parents, and assign remedial classes.`;
+      } else if (level === 'Medium Risk') {
+        recommendation = `Warning: ${factors.join(' & ') || 'Borderline metrics'}. Send attendance/submission reminder and monitor closely before mid-semester exams.`;
+      }
+
+      return { score: totalScore, level, keyFactor, factors, recommendation };
     }
 
-    // -----------------------------------------------------------------------
-    // INITIALIZATION & PERSISTENCE
-    // -----------------------------------------------------------------------
-    function loadState() {
+    // ---------------------------------------------------------------------
+    // DATA PERSISTENCE (LOCALSTORAGE)
+    // ---------------------------------------------------------------------
+    function loadStudents() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          students = JSON.parse(saved);
-        } else {
-          students = structuredClone(DEFAULT_STUDENTS);
-          saveState();
-        }
+        students = saved ? JSON.parse(saved) : structuredClone(SAMPLE_STUDENTS);
       } catch (e) {
-        students = structuredClone(DEFAULT_STUDENTS);
+        students = structuredClone(SAMPLE_STUDENTS);
       }
     }
 
-    function saveState() {
+    function saveStudents() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
       } catch (e) {
-        console.warn('LocalStorage unavailable:', e);
+        console.warn('Could not save to localStorage:', e);
       }
     }
 
-    function resetDemoData() {
-      students = structuredClone(DEFAULT_STUDENTS);
-      saveState();
-      refreshAllUI();
-      showToast('Cohort telemetry reset to default 12-student baseline.', 'amber');
+    function resetSampleData() {
+      students = structuredClone(SAMPLE_STUDENTS);
+      saveStudents();
+      renderAll();
+      showToast('Restored 8 default college students.', 'indigo');
     }
 
-    // -----------------------------------------------------------------------
-    // NAVIGATION & VIEW SWITCHING
-    // -----------------------------------------------------------------------
-    function switchView(viewName) {
-      const views = ['overview', 'simulator', 'data'];
-      const titles = {
-        overview: 'Cohort Radar & Early Warning Watchlist',
-        simulator: 'Live Risk Simulator (Explainable AI)',
-        data: 'CSV Batch Import & Cohort Reporting'
+    // ---------------------------------------------------------------------
+    // LIVE CALCULATOR PREVIEW & ADD STUDENT
+    // ---------------------------------------------------------------------
+    function updateLiveCalculator() {
+      const attendance = Number(document.getElementById('inAttendance').value);
+      const cgpa = Number(document.getElementById('inCgpa').value);
+      const assignments = Number(document.getElementById('inAssignments').value);
+      const statusFlag = document.getElementById('inStatusFlag').value;
+
+      document.getElementById('valAttendance').textContent = `${attendance}%`;
+      document.getElementById('valCgpa').textContent = cgpa.toFixed(1);
+      document.getElementById('valAssignments').textContent = `${assignments}%`;
+
+      const result = calculateStudentRisk({ attendance, cgpa, assignments, statusFlag });
+
+      const card = document.getElementById('livePreviewCard');
+      const badge = document.getElementById('previewBadge');
+      const scoreEl = document.getElementById('previewScore');
+      const factorsEl = document.getElementById('previewFactors');
+      const recEl = document.getElementById('previewRecommendation');
+
+      scoreEl.textContent = `${result.score}%`;
+      recEl.textContent = result.recommendation;
+
+      // Update Card Styling by Risk Level
+      if (result.level === 'High Risk') {
+        card.className = 'lg:col-span-5 rounded-2xl border-2 border-red-200 bg-red-50/50 p-5 sm:p-6 flex flex-col justify-between transition-colors';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200';
+        scoreEl.className = 'text-5xl font-extrabold font-mono text-red-600';
+      } else if (result.level === 'Medium Risk') {
+        card.className = 'lg:col-span-5 rounded-2xl border-2 border-amber-200 bg-amber-50/50 p-5 sm:p-6 flex flex-col justify-between transition-colors';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200';
+        scoreEl.className = 'text-5xl font-extrabold font-mono text-amber-600';
+      } else {
+        card.className = 'lg:col-span-5 rounded-2xl border-2 border-emerald-200 bg-emerald-50/50 p-5 sm:p-6 flex flex-col justify-between transition-colors';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200';
+        scoreEl.className = 'text-5xl font-extrabold font-mono text-emerald-600';
+      }
+      badge.textContent = result.level.toUpperCase();
+
+      // Render Factor Chips
+      const chipList = result.factors.length > 0 ? result.factors : ['All Metrics Healthy'];
+      factorsEl.innerHTML = chipList.map(f => `
+        <span class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white border border-slate-200 text-slate-700">
+          ${f}
+        </span>
+      `).join('');
+    }
+
+    function addStudentFromCalculator(e) {
+      e.preventDefault();
+      const rollNo = document.getElementById('inRoll').value.trim().toUpperCase();
+      const name = document.getElementById('inName').value.trim();
+      const dept = document.getElementById('inDept').value;
+      const attendance = Number(document.getElementById('inAttendance').value);
+      const cgpa = Number(document.getElementById('inCgpa').value);
+      const assignments = Number(document.getElementById('inAssignments').value);
+      const statusFlag = document.getElementById('inStatusFlag').value;
+
+      if (!rollNo || !name) return;
+
+      const risk = calculateStudentRisk({ attendance, cgpa, assignments, statusFlag });
+      const defaultTasks = risk.level === 'High Risk'
+        ? [
+            { text: 'Schedule urgent 1-on-1 Faculty Mentor counseling', done: false },
+            { text: 'Notify parents & assign remedial subject classes', done: false }
+          ]
+        : [
+            { text: 'Conduct routine mentor check-in', done: false }
+          ];
+
+      // Replace if Roll No already exists, otherwise add to top
+      const existingIdx = students.findIndex(s => s.rollNo.toUpperCase() === rollNo);
+      const newRecord = {
+        rollNo,
+        name,
+        dept,
+        attendance,
+        cgpa,
+        assignments,
+        statusFlag,
+        tasks: defaultTasks,
+        remark: ''
       };
 
-      views.forEach(v => {
-        const section = document.getElementById(`view-${v}`);
-        const navBtn = document.getElementById(`nav-${v}`);
-        if (v === viewName) {
-          section.classList.remove('hidden');
-          navBtn.classList.add('bg-amber-500/15', 'text-amber-300', 'border-amber-500/30');
-          navBtn.classList.remove('text-slate-400', 'border-transparent');
-        } else {
-          section.classList.add('hidden');
-          navBtn.classList.remove('bg-amber-500/15', 'text-amber-300', 'border-amber-500/30');
-          navBtn.classList.add('text-slate-400', 'border-transparent');
-        }
-      });
-
-      document.getElementById('pageTitle').textContent = titles[viewName];
-
-      if (viewName === 'overview') {
-        requestAnimationFrame(() => drawTelemetryRadar());
-      } else if (viewName === 'simulator') {
-        updateSimulator();
+      if (existingIdx >= 0) {
+        students[existingIdx] = newRecord;
+        showToast(`Updated record for ${name} (${rollNo}).`, 'indigo');
+      } else {
+        students.unshift(newRecord);
+        showToast(`Added ${name} (${rollNo}) to watchlist.`, 'emerald');
       }
+
+      saveStudents();
+      renderAll();
+
+      // Auto-increment sample Roll No for convenience
+      const nextNum = 110 + students.length;
+      document.getElementById('inRoll').value = `CS-${nextNum}`;
+      document.getElementById('inName').value = '';
     }
 
-    // -----------------------------------------------------------------------
-    // KPI STRIP, DONUT RING & RADAR CHART
-    // -----------------------------------------------------------------------
-    function renderKPIsAndCharts() {
-      const enriched = students.map(s => ({ ...s, risk: calculateRiskProfile(s) }));
+    // ---------------------------------------------------------------------
+    // 4. DASHBOARD RENDERING (KPIs, SVG CHARTS & TABLE)
+    // ---------------------------------------------------------------------
+    function renderAll() {
+      const enriched = students.map(s => ({ ...s, risk: calculateStudentRisk(s) }));
+      renderKPIs(enriched);
+      renderDistributionChart(enriched);
+      renderScatterChart(enriched);
+      renderStudentTable(enriched);
+    }
+
+    function renderKPIs(enriched) {
       const total = enriched.length;
-      const critical = enriched.filter(s => s.risk.tier === 'Critical').length;
-      const elevated = enriched.filter(s => s.risk.tier === 'Elevated').length;
-      const watch = enriched.filter(s => s.risk.tier === 'Watch').length;
-      const stable = enriched.filter(s => s.risk.tier === 'Stable').length;
-
-      // Intervention completion
-      let doneTasks = 0;
-      let totalTasks = 0;
-      enriched.forEach(s => {
-        s.interventions.forEach(t => {
-          totalTasks++;
-          if (t.done) doneTasks++;
-        });
-      });
-      const intRate = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
-
-      // Avg Attendance & Avg Risk
+      const highCount = enriched.filter(s => s.risk.level === 'High Risk').length;
+      const medCount = enriched.filter(s => s.risk.level === 'Medium Risk').length;
       const avgAtt = total > 0
-        ? (enriched.reduce((acc, s) => acc + Number(s.attendance), 0) / total).toFixed(1)
+        ? (enriched.reduce((sum, s) => sum + Number(s.attendance), 0) / total).toFixed(1)
         : '0.0';
-      const avgRisk = total > 0
-        ? Math.round(enriched.reduce((acc, s) => acc + s.risk.score, 0) / total)
-        : 0;
 
-      document.getElementById('kpiTotalStudents').textContent = total;
-      document.getElementById('kpiCriticalCount').textContent = critical;
-      document.getElementById('kpiElevatedText').textContent = `+${elevated} Elevated`;
-      document.getElementById('kpiInterventionRate').textContent = `${intRate}%`;
-      document.getElementById('kpiInterventionFraction').textContent = `${doneTasks}/${totalTasks} tasks`;
+      document.getElementById('kpiTotal').textContent = total;
+      document.getElementById('kpiHighRisk').textContent = highCount;
+      document.getElementById('kpiMediumRisk').textContent = medCount;
       document.getElementById('kpiAvgAttendance').textContent = `${avgAtt}%`;
-      document.getElementById('donutCenterScore').textContent = avgRisk;
-
-      renderCohortDonut([
-        { label: 'Critical', count: critical, color: '#F43F5E', badgeBg: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
-        { label: 'Elevated', count: elevated, color: '#F59E0B', badgeBg: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
-        { label: 'Watch', count: watch, color: '#38BDF8', badgeBg: 'bg-sky-500/15 text-sky-300 border-sky-500/30' },
-        { label: 'Stable', count: stable, color: '#10B981', badgeBg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' }
-      ], total);
-
-      drawTelemetryRadar(enriched);
     }
 
-    function renderCohortDonut(tiers, total) {
-      const svg = document.getElementById('cohortDonutSvg');
-      const legend = document.getElementById('tierLegendContainer');
-      const radius = 62;
-      const circumference = 2 * Math.PI * radius;
-      let offset = 0;
-      let circlesSvg = `<circle cx="80" cy="80" r="${radius}" fill="none" stroke="#1E293B" stroke-width="16" />`;
+    // Chart 1: Clean Interactive Horizontal Bar Distribution
+    function renderDistributionChart(enriched) {
+      const total = enriched.length || 1;
+      const groups = [
+        {
+          label: 'High Risk',
+          count: enriched.filter(s => s.risk.level === 'High Risk').length,
+          barColor: 'bg-red-600',
+          badgeClass: 'text-red-700 bg-red-50 border-red-200'
+        },
+        {
+          label: 'Medium Risk',
+          count: enriched.filter(s => s.risk.level === 'Medium Risk').length,
+          barColor: 'bg-amber-500',
+          badgeClass: 'text-amber-700 bg-amber-50 border-amber-200'
+        },
+        {
+          label: 'Low Risk',
+          count: enriched.filter(s => s.risk.level === 'Low Risk').length,
+          barColor: 'bg-emerald-600',
+          badgeClass: 'text-emerald-700 bg-emerald-50 border-emerald-200'
+        }
+      ];
 
-      tiers.forEach(t => {
-        if (total === 0 || t.count === 0) return;
-        const fraction = t.count / total;
-        const dash = fraction * circumference;
-        circlesSvg += `
-          <circle cx="80" cy="80" r="${radius}" fill="none"
-            stroke="${t.color}" stroke-width="16"
-            stroke-dasharray="${dash} ${circumference - dash}"
-            stroke-dashoffset="${-offset}"
-            class="transition-all duration-500 cursor-pointer hover:opacity-85"
-            onclick="setTierFilter('${t.label}')" />
-        `;
-        offset += dash;
-      });
-
-      svg.innerHTML = circlesSvg;
-
-      legend.innerHTML = tiers.map(t => {
-        const pct = total > 0 ? Math.round((t.count / total) * 100) : 0;
+      document.getElementById('riskDistributionChart').innerHTML = groups.map(g => {
+        const pct = Math.round((g.count / total) * 100);
         return `
-          <button onclick="setTierFilter('${t.label}')" class="w-full flex items-center justify-between p-2.5 rounded-xl bg-obsidian-950/70 hover:bg-slate-800/80 border border-slate-800/80 transition text-left">
-            <div class="flex items-center gap-2.5">
-              <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${t.color}"></span>
-              <span class="text-xs font-semibold text-slate-200">${t.label}</span>
+          <div onclick="setRiskFilter('${g.label}')" class="cursor-pointer group">
+            <div class="flex items-center justify-between text-xs font-semibold mb-1.5">
+              <span class="px-2.5 py-0.5 rounded-md border ${g.badgeClass} group-hover:opacity-80 transition">${g.label}</span>
+              <span class="font-mono text-slate-700">${g.count} students (${pct}%)</span>
             </div>
-            <div class="flex items-center gap-2 font-mono text-xs">
-              <span class="font-bold text-white">${t.count}</span>
-              <span class="text-slate-500">(${pct}%)</span>
+            <div class="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
+              <div class="h-full ${g.barColor} rounded-full transition-all duration-500" style="width: ${pct}%"></div>
             </div>
-          </button>
+          </div>
         `;
       }).join('');
     }
 
-    // Custom Canvas Multi-Factor Radar Chart
-    function drawTelemetryRadar(enrichedData) {
-      const canvas = document.getElementById('telemetryRadarCanvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) return;
+    // Chart 2: Clean SVG Attendance % vs. CGPA (/10) Danger Zone Scatter Plot
+    function renderScatterChart(enriched) {
+      const svg = document.getElementById('scatterChartSvg');
+      const padL = 42, padR = 18, padT = 16, padB = 32;
+      const w = 480 - padL - padR;
+      const h = 220 - padT - padB;
 
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
+      // X-axis: Attendance 40% to 100%
+      // Y-axis: CGPA 4.0 to 10.0
+      const xScale = att => padL + ((Math.max(40, Math.min(100, att)) - 40) / 60) * w;
+      const yScale = cgpa => padT + h - ((Math.max(4, Math.min(10, cgpa)) - 4) / 6) * h;
 
-      const w = rect.width;
-      const h = rect.height;
-      const cx = w / 2;
-      const cy = h / 2 + 4;
-      const maxR = Math.min(w, h) * 0.34;
+      const x75 = xScale(75);
+      const y65 = yScale(6.5);
 
-      ctx.clearRect(0, 0, w, h);
+      let svgContent = `
+        <!-- Chart Background -->
+        <rect x="${padL}" y="${padT}" width="${w}" height="${h}" fill="#f8fafc" stroke="#e2e8f0" rx="6" />
 
-      const enriched = enrichedData || students.map(s => ({ ...s, risk: calculateRiskProfile(s) }));
-      const criticalStudents = enriched.filter(s => s.risk.tier === 'Critical' || s.risk.tier === 'Elevated');
-      const sample = criticalStudents.length > 0 ? criticalStudents : enriched;
+        <!-- Red Danger Zone Box (Attendance < 75% and CGPA < 6.5) -->
+        <rect x="${padL}" y="${y65}" width="${x75 - padL}" height="${padT + h - y65}" fill="#fee2e2" opacity="0.65" />
+        <text x="${padL + 8}" y="${padT + h - 8}" fill="#dc2626" font-size="10" font-weight="700">DANGER ZONE</text>
 
-      // Normalized 0..100 health scores across 5 axes
-      const avgAtt = sample.reduce((a, s) => a + s.attendance, 0) / (sample.length || 1);
-      const avgGpaNorm = (sample.reduce((a, s) => a + s.gpa, 0) / (sample.length || 1)) / 4.0 * 100;
-      const avgLmsNorm = Math.min(100, (sample.reduce((a, s) => a + s.lmsLogins, 0) / (sample.length || 1)) / 12 * 100);
-      const avgAssign = sample.reduce((a, s) => a + s.assignments, 0) / (sample.length || 1);
-      const finHealth = (sample.filter(s => !s.financialHold).length / (sample.length || 1)) * 100;
+        <!-- 75% Attendance Threshold Dashed Line -->
+        <line x1="${x75}" y1="${padT}" x2="${x75}" y2="${padT + h}" stroke="#94a3b8" stroke-dasharray="4 3" stroke-width="1.2" />
+        <text x="${x75 + 4}" y="${padT + 12}" fill="#64748b" font-size="9" font-family="JetBrains Mono">75% Min</text>
 
-      const labels = ['Attendance', 'GPA Index', 'LMS Velocity', 'Assignments', 'Bursar Clear'];
-      const criticalVals = [avgAtt, avgGpaNorm, avgLmsNorm, avgAssign, finHealth];
-      const benchmarkVals = [90, 82, 85, 92, 95];
+        <!-- Y-Axis Labels (CGPA) -->
+        <text x="${padL - 8}" y="${padT + 6}" text-anchor="end" fill="#64748b" font-size="10" font-family="JetBrains Mono">10</text>
+        <text x="${padL - 8}" y="${yScale(7)}" text-anchor="end" fill="#64748b" font-size="10" font-family="JetBrains Mono">7.0</text>
+        <text x="${padL - 8}" y="${padT + h}" text-anchor="end" fill="#64748b" font-size="10" font-family="JetBrains Mono">4.0</text>
 
-      const numAxes = labels.length;
-      const angleStep = (Math.PI * 2) / numAxes;
+        <!-- X-Axis Labels (Attendance) -->
+        <text x="${padL}" y="${padT + h + 18}" text-anchor="start" fill="#64748b" font-size="10" font-family="JetBrains Mono">40%</text>
+        <text x="${x75}" y="${padT + h + 18}" text-anchor="middle" fill="#64748b" font-size="10" font-family="JetBrains Mono">75%</text>
+        <text x="${padL + w}" y="${padT + h + 18}" text-anchor="end" fill="#64748b" font-size="10" font-family="JetBrains Mono">100%</text>
+        <text x="${padL + w / 2}" y="${padT + h + 28}" text-anchor="middle" fill="#475569" font-size="10" font-weight="600">Attendance Percentage →</text>
+      `;
 
-      // Concentric web polygons
-      for (let level = 1; level <= 4; level++) {
-        const r = (maxR / 4) * level;
-        ctx.beginPath();
-        for (let i = 0; i < numAxes; i++) {
-          const angle = -Math.PI / 2 + i * angleStep;
-          const x = cx + Math.cos(angle) * r;
-          const y = cy + Math.sin(angle) * r;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.14)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
+      // Plot each student dot
+      enriched.forEach(s => {
+        const cx = xScale(s.attendance);
+        const cy = yScale(s.cgpa);
+        const fill = s.risk.level === 'High Risk' ? '#dc2626' : s.risk.level === 'Medium Risk' ? '#d97706' : '#059669';
 
-      // Axis spokes & labels
-      ctx.font = '600 11px "Plus Jakarta Sans", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+        svgContent += `
+          <g class="cursor-pointer" onclick="openAdviseModal('${s.rollNo}')">
+            <circle cx="${cx}" cy="${cy}" r="6.5" fill="${fill}" stroke="#ffffff" stroke-width="2" />
+            <text x="${cx}" y="${cy - 9}" text-anchor="middle" fill="#1e293b" font-size="9" font-family="JetBrains Mono" font-weight="600">${s.rollNo}</text>
+          </g>
+        `;
+      });
 
-      for (let i = 0; i < numAxes; i++) {
-        const angle = -Math.PI / 2 + i * angleStep;
-        const x = cx + Math.cos(angle) * maxR;
-        const y = cy + Math.sin(angle) * maxR;
-
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(x, y);
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.16)';
-        ctx.stroke();
-
-        const lx = cx + Math.cos(angle) * (maxR + 24);
-        const ly = cy + Math.sin(angle) * (maxR + 18);
-        ctx.fillStyle = '#94A3B8';
-        ctx.fillText(labels[i], lx, ly);
-      }
-
-      // Helper to plot polygon
-      function plotPolygon(values, fillStyle, strokeStyle) {
-        ctx.beginPath();
-        values.forEach((val, i) => {
-          const norm = Math.max(0.1, Math.min(1, val / 100));
-          const angle = -Math.PI / 2 + i * angleStep;
-          const x = cx + Math.cos(angle) * (maxR * norm);
-          const y = cy + Math.sin(angle) * (maxR * norm);
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-        ctx.closePath();
-        ctx.fillStyle = fillStyle;
-        ctx.fill();
-        ctx.strokeStyle = strokeStyle;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-
-      plotPolygon(benchmarkVals, 'rgba(16, 185, 129, 0.14)', '#10B981');
-      plotPolygon(criticalVals, 'rgba(244, 63, 94, 0.24)', '#F43F5E');
+      svg.innerHTML = svgContent;
     }
 
-    // -----------------------------------------------------------------------
-    // EARLY WARNING WATCHLIST TABLE
-    // -----------------------------------------------------------------------
-    function setTierFilter(tier) {
-      currentTierFilter = tier;
-      document.querySelectorAll('.tier-pill').forEach(btn => {
-        if (btn.dataset.tier === tier) {
-          btn.classList.add('bg-slate-800', 'text-white');
-          btn.classList.remove('text-slate-400');
+    // Filter & Render Main Student Table
+    function setRiskFilter(filterLevel) {
+      currentFilter = filterLevel;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.dataset.filter === filterLevel) {
+          btn.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+          btn.classList.remove('text-slate-600');
         } else {
-          btn.classList.remove('bg-slate-800', 'text-white');
-          btn.classList.add('text-slate-400');
+          btn.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+          btn.classList.add('text-slate-600');
         }
       });
-      renderWatchlist();
+      renderStudentTable();
     }
 
-    function getTierBadgeHTML(tier, score) {
-      const styles = {
-        Critical: 'bg-rose-500/15 text-rose-300 border-rose-500/40',
-        Elevated: 'bg-amber-500/15 text-amber-300 border-amber-500/40',
-        Watch: 'bg-sky-500/15 text-sky-300 border-sky-500/40',
-        Stable: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
-      };
-      const dotColors = {
-        Critical: 'bg-rose-400',
-        Elevated: 'bg-amber-400',
-        Watch: 'bg-sky-400',
-        Stable: 'bg-emerald-400'
-      };
-      return `
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold border ${styles[tier]}">
-          <span class="w-1.5 h-1.5 rounded-full ${dotColors[tier]}"></span>
-          <span>${score} • ${tier}</span>
-        </span>
-      `;
-    }
-
-    function renderWatchlist() {
-      const query = (document.getElementById('watchlistSearch').value || '').toLowerCase().trim();
-      const tbody = document.getElementById('watchlistTableBody');
-
-      const enriched = students
-        .map(s => ({ ...s, risk: calculateRiskProfile(s) }))
+    function renderStudentTable(precomputed) {
+      const enriched = (precomputed || students.map(s => ({ ...s, risk: calculateStudentRisk(s) })))
         .sort((a, b) => b.risk.score - a.risk.score);
 
+      const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
       const filtered = enriched.filter(s => {
-        const matchesTier = currentTierFilter === 'ALL' || s.risk.tier === currentTierFilter;
-        const searchable = `${s.name} ${s.id} ${s.major} ${s.year} ${s.risk.drivers.join(' ')}`.toLowerCase();
-        const matchesQuery = !query || searchable.includes(query);
-        return matchesTier && matchesQuery;
+        const matchesFilter = currentFilter === 'ALL' || s.risk.level === currentFilter;
+        const matchesQuery = !query ||
+          s.name.toLowerCase().includes(query) ||
+          s.rollNo.toLowerCase().includes(query) ||
+          s.dept.toLowerCase().includes(query);
+        return matchesFilter && matchesQuery;
       });
 
+      const tbody = document.getElementById('studentTableBody');
       if (filtered.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="7" class="py-10 text-center text-sm text-slate-400">
-              No students match your current filter criteria.
+            <td colspan="9" class="py-10 text-center text-sm text-slate-500">
+              No students match the selected filter. Click <strong>All</strong> to view everyone.
             </td>
           </tr>
         `;
@@ -1410,551 +989,222 @@ STU-1092,Marcus Vance,Mechanical Eng,Freshman,71,2.45,5,70,false</pre>
       }
 
       tbody.innerHTML = filtered.map(s => {
-        const doneCount = s.interventions.filter(i => i.done).length;
-        const totalCount = s.interventions.length;
-        const attColor = s.attendance < 70 ? 'text-rose-400' : s.attendance < 82 ? 'text-amber-300' : 'text-emerald-400';
+        const badgeStyle =
+          s.risk.level === 'High Risk' ? 'bg-red-50 text-red-700 border-red-200' :
+          s.risk.level === 'Medium Risk' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+          'bg-emerald-50 text-emerald-700 border-emerald-200';
 
-        const driverTags = s.risk.drivers.slice(0, 2).map(d => {
-          const isNeutral = d === 'On Track';
-          return `<span class="px-2 py-0.5 rounded-md text-[11px] font-medium ${isNeutral ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'bg-slate-800 text-slate-200 border border-slate-700'}">${d}</span>`;
-        }).join(' ');
+        const attStyle = s.attendance < 75 ? 'text-red-600 font-bold' : 'text-slate-700 font-semibold';
+        const hasScheduled = s.tasks && s.tasks.some(t => t.done);
 
         return `
-          <tr onclick="openStudentDrawer('${s.id}')" class="hover:bg-slate-800/45 transition cursor-pointer group">
-            <td class="py-3.5 px-5">
-              <div class="font-bold text-white group-hover:text-amber-300 transition">${s.name}</div>
-              <div class="text-xs text-slate-400 font-mono">${s.id} • <span class="font-sans">${s.major} (${s.year})</span></div>
-            </td>
-            <td class="py-3.5 px-4 whitespace-nowrap">
-              ${getTierBadgeHTML(s.risk.tier, s.risk.score)}
-            </td>
-            <td class="py-3.5 px-4 font-mono text-xs font-bold ${attColor}">
-              ${s.attendance}%
-            </td>
-            <td class="py-3.5 px-4 font-mono text-xs text-slate-300">
-              <div>GPA: <strong class="text-white">${Number(s.gpa).toFixed(2)}</strong></div>
-              <div class="text-slate-500">LMS: ${s.lmsLogins}/wk</div>
-            </td>
+          <tr class="hover:bg-slate-50/90 transition">
+            <td class="py-3.5 px-5 font-mono text-xs font-bold text-slate-700">${s.rollNo}</td>
             <td class="py-3.5 px-4">
-              <div class="flex flex-wrap gap-1.5">${driverTags}</div>
+              <div class="font-semibold text-slate-900">${s.name}</div>
+              ${hasScheduled ? '<span class="text-[10px] font-semibold text-indigo-600">✓ Counseling Logged</span>' : ''}
             </td>
-            <td class="py-3.5 px-4 font-mono text-xs">
-              <div class="flex items-center gap-2">
-                <div class="w-16 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                  <div class="h-full bg-emerald-400" style="width: ${totalCount ? (doneCount / totalCount) * 100 : 100}%"></div>
-                </div>
-                <span class="text-slate-300">${doneCount}/${totalCount}</span>
+            <td class="py-3.5 px-4 text-xs font-medium text-slate-600">${s.dept}</td>
+            <td class="py-3.5 px-4 font-mono text-xs ${attStyle}">${s.attendance}%</td>
+            <td class="py-3.5 px-4 font-mono text-xs font-semibold text-slate-800">${Number(s.cgpa).toFixed(1)}</td>
+            <td class="py-3.5 px-4 font-mono text-xs text-slate-600">${s.assignments}%</td>
+            <td class="py-3.5 px-4 whitespace-nowrap">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${badgeStyle}">
+                <span>${s.risk.score}%</span>
+                <span>•</span>
+                <span>${s.risk.level}</span>
+              </span>
+            </td>
+            <td class="py-3.5 px-4 text-xs text-slate-600">${s.risk.keyFactor}</td>
+            <td class="py-3.5 px-5 text-right whitespace-nowrap">
+              <div class="inline-flex items-center gap-1.5">
+                <button onclick="openAdviseModal('${s.rollNo}')" class="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200 text-xs font-semibold transition">
+                  View / Advise
+                </button>
+                <button onclick="deleteStudent('${s.rollNo}')" class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition" title="Remove student">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
               </div>
-            </td>
-            <td class="py-3.5 px-5 text-right">
-              <button onclick="event.stopPropagation(); openStudentDrawer('${s.id}')" class="px-3 py-1.5 rounded-lg bg-slate-800/90 group-hover:bg-amber-500 group-hover:text-slate-950 text-xs font-semibold text-slate-200 transition">
-                Inspect
-              </button>
             </td>
           </tr>
         `;
       }).join('');
     }
 
-    // -----------------------------------------------------------------------
-    // SLIDE-OVER STUDENT CASE DRAWER & INTERVENTION TRACKER
-    // -----------------------------------------------------------------------
-    function openStudentDrawer(studentId) {
-      const student = students.find(s => s.id === studentId);
+    function deleteStudent(rollNo) {
+      students = students.filter(s => s.rollNo !== rollNo);
+      saveStudents();
+      renderAll();
+      showToast(`Removed ${rollNo} from watchlist.`, 'slate');
+    }
+
+    // ---------------------------------------------------------------------
+    // MODALS: FORMULA EXPLANATION & MENTOR ADVISORY CHECKLIST
+    // ---------------------------------------------------------------------
+    function openFormulaModal() {
+      const m = document.getElementById('formulaModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeFormulaModal() {
+      const m = document.getElementById('formulaModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function openAdviseModal(rollNo) {
+      const student = students.find(s => s.rollNo === rollNo);
       if (!student) return;
-      activeDrawerStudentId = studentId;
+      activeStudentRoll = rollNo;
 
-      const risk = calculateRiskProfile(student);
+      const risk = calculateStudentRisk(student);
+      document.getElementById('modalRollNo').textContent = `${student.rollNo} • ${student.dept}`;
+      document.getElementById('modalStudentName').textContent = `${student.name} (${risk.score}% ${risk.level})`;
 
-      document.getElementById('drawerStudentId').textContent = student.id;
-      document.getElementById('drawerStudentName').textContent = student.name;
-      document.getElementById('drawerStudentMeta').textContent = `${student.major} • ${student.year}`;
-
-      const badge = document.getElementById('drawerRiskBadge');
-      badge.textContent = `${risk.tier.toUpperCase()} • ${risk.score} PTS`;
-      badge.className = `px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold uppercase border ${
-        risk.tier === 'Critical' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' :
-        risk.tier === 'Elevated' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-        risk.tier === 'Watch' ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' :
-        'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-      }`;
-
-      // 4 Mini Telemetry Metrics
-      document.getElementById('drawerMetricsGrid').innerHTML = `
-        <div class="p-3 rounded-xl bg-obsidian-950 border border-slate-800">
-          <span class="text-[10px] font-mono uppercase text-slate-500">Attendance</span>
-          <div class="text-lg font-extrabold font-mono text-white mt-0.5">${student.attendance}%</div>
+      document.getElementById('modalMetricsRow').innerHTML = `
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <div class="text-[11px] text-slate-500 font-semibold">Attendance</div>
+          <div class="text-lg font-extrabold font-mono ${student.attendance < 75 ? 'text-red-600' : 'text-slate-900'}">${student.attendance}%</div>
         </div>
-        <div class="p-3 rounded-xl bg-obsidian-950 border border-slate-800">
-          <span class="text-[10px] font-mono uppercase text-slate-500">Cum. GPA</span>
-          <div class="text-lg font-extrabold font-mono text-white mt-0.5">${Number(student.gpa).toFixed(2)}</div>
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <div class="text-[11px] text-slate-500 font-semibold">CGPA (/10)</div>
+          <div class="text-lg font-extrabold font-mono text-slate-900">${Number(student.cgpa).toFixed(1)}</div>
         </div>
-        <div class="p-3 rounded-xl bg-obsidian-950 border border-slate-800">
-          <span class="text-[10px] font-mono uppercase text-slate-500">LMS / Wk</span>
-          <div class="text-lg font-extrabold font-mono text-white mt-0.5">${student.lmsLogins}</div>
-        </div>
-        <div class="p-3 rounded-xl bg-obsidian-950 border border-slate-800">
-          <span class="text-[10px] font-mono uppercase text-slate-500">Bursar Hold</span>
-          <div class="text-sm font-extrabold font-mono mt-1 ${student.financialHold ? 'text-rose-400' : 'text-emerald-400'}">
-            ${student.financialHold ? 'ACTIVE HOLD' : 'CLEARED'}
-          </div>
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <div class="text-[11px] text-slate-500 font-semibold">Assignments</div>
+          <div class="text-lg font-extrabold font-mono text-slate-900">${student.assignments}%</div>
         </div>
       `;
 
-      // Render 12-Week Trajectory Sparkline SVG
-      renderDrawerSparkline(student.weeklyAttendance, student.weeklyScores);
+      renderModalChecklist(student);
 
-      // Risk Drivers
-      document.getElementById('drawerDriversList').innerHTML = risk.contributions
-        .filter(c => c.pts !== 0)
-        .map(c => `
-          <span class="px-2.5 py-1 rounded-lg text-xs font-mono border ${
-            c.pts > 0
-              ? 'bg-rose-500/10 text-rose-300 border-rose-500/25'
-              : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25'
-          }">
-            ${c.key}: ${c.pts > 0 ? '+' + c.pts : c.pts} pts
-          </span>
-        `).join('');
-
-      // Render Checklist & Notes
-      renderDrawerChecklist(student);
-      renderDrawerNotes(student);
-
-      // Show Drawer
-      const backdrop = document.getElementById('drawerBackdrop');
-      const drawer = document.getElementById('studentCaseDrawer');
-      backdrop.classList.remove('hidden');
-      requestAnimationFrame(() => {
-        backdrop.classList.remove('opacity-0');
-        drawer.classList.remove('translate-x-full');
-      });
-    }
-
-    function closeStudentDrawer() {
-      const backdrop = document.getElementById('drawerBackdrop');
-      const drawer = document.getElementById('studentCaseDrawer');
-      backdrop.classList.add('opacity-0');
-      drawer.classList.add('translate-x-full');
-      setTimeout(() => {
-        backdrop.classList.add('hidden');
-      }, 280);
-    }
-
-    function renderDrawerSparkline(attArr, scoreArr) {
-      const svg = document.getElementById('drawerSparklineSvg');
-      const w = 460;
-      const h = 115;
-      const padX = 16;
-      const padY = 14;
-
-      function toPoints(arr) {
-        return arr.map((val, idx) => {
-          const x = padX + (idx / (arr.length - 1)) * (w - padX * 2);
-          const norm = Math.max(30, Math.min(100, val));
-          const y = h - padY - ((norm - 30) / 70) * (h - padY * 2);
-          return `${x.toFixed(1)},${y.toFixed(1)}`;
-        }).join(' ');
+      const savedRemarkEl = document.getElementById('modalSavedRemark');
+      if (student.remark) {
+        savedRemarkEl.textContent = `Saved Note: "${student.remark}"`;
+        savedRemarkEl.classList.remove('hidden');
+      } else {
+        savedRemarkEl.classList.add('hidden');
       }
 
-      const attPts = toPoints(attArr);
-      const scorePts = toPoints(scoreArr);
-
-      svg.innerHTML = `
-        <line x1="${padX}" y1="${h - padY}" x2="${w - padX}" y2="${h - padY}" stroke="#1E293B" stroke-width="1" />
-        <line x1="${padX}" y1="${padY}" x2="${w - padX}" y2="${padY}" stroke="#1E293B" stroke-dasharray="3 3" stroke-width="1" />
-        <polyline fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="${scorePts}" />
-        <polyline fill="none" stroke="#F59E0B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" points="${attPts}" />
-        <text x="${padX}" y="${h - 2}" fill="#64748B" font-size="9" font-family="JetBrains Mono">WK 1</text>
-        <text x="${w - padX - 28}" y="${h - 2}" fill="#64748B" font-size="9" font-family="JetBrains Mono">WK 12</text>
-      `;
+      const m = document.getElementById('adviseModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
     }
 
-    function renderDrawerChecklist(student) {
-      const done = student.interventions.filter(i => i.done).length;
-      document.getElementById('drawerChecklistProgress').textContent = `${done}/${student.interventions.length} Done`;
+    function closeAdviseModal() {
+      const m = document.getElementById('adviseModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
 
-      document.getElementById('drawerChecklistContainer').innerHTML = student.interventions.map(item => `
-        <label class="flex items-start gap-3 p-3 rounded-xl bg-obsidian-900 border ${item.done ? 'border-emerald-500/25 bg-emerald-500/5' : 'border-slate-800'} cursor-pointer hover:border-slate-700 transition">
-          <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleInterventionTask('${student.id}', '${item.id}')" class="mt-0.5 w-4 h-4 accent-emerald-500 rounded cursor-pointer" />
-          <span class="text-xs leading-relaxed ${item.done ? 'line-through text-slate-500' : 'text-slate-200 font-medium'}">${item.text}</span>
+    function renderModalChecklist(student) {
+      const anyDone = student.tasks.some(t => t.done);
+      const badge = document.getElementById('modalCounselingBadge');
+      if (anyDone) {
+        badge.textContent = 'Counseling Scheduled';
+        badge.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200';
+      } else {
+        badge.textContent = 'Pending Action';
+        badge.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200';
+      }
+
+      document.getElementById('modalChecklist').innerHTML = student.tasks.map((task, idx) => `
+        <label class="flex items-start gap-2.5 p-3 rounded-xl border ${task.done ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200'} cursor-pointer">
+          <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleStudentTask(${idx})" class="mt-0.5 w-4 h-4 accent-indigo-600 rounded cursor-pointer" />
+          <span class="text-xs ${task.done ? 'line-through text-slate-400' : 'text-slate-800 font-medium'}">${task.text}</span>
         </label>
       `).join('');
     }
 
-    function toggleInterventionTask(studentId, taskId) {
-      const student = students.find(s => s.id === studentId);
+    function toggleStudentTask(taskIndex) {
+      const student = students.find(s => s.rollNo === activeStudentRoll);
       if (!student) return;
-      const task = student.interventions.find(t => t.id === taskId);
-      if (task) {
-        task.done = !task.done;
-        saveState();
-        renderDrawerChecklist(student);
-        renderKPIsAndCharts();
-        renderWatchlist();
-        showToast(task.done ? 'Intervention marked completed.' : 'Intervention reopened.', 'emerald');
-      }
+      student.tasks[taskIndex].done = !student.tasks[taskIndex].done;
+      saveStudents();
+      renderModalChecklist(student);
+      renderStudentTable();
     }
 
-    function renderDrawerNotes(student) {
-      const container = document.getElementById('drawerNotesList');
-      if (!student.notes || student.notes.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 italic">No advisor notes logged yet.</p>`;
-        return;
-      }
-      container.innerHTML = student.notes.map(n => `
-        <div class="p-3 rounded-xl bg-obsidian-950 border border-slate-800/90 text-xs">
-          <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
-            <span class="text-amber-300 font-semibold">${n.author}</span>
-            <span>${n.date}</span>
-          </div>
-          <p class="text-slate-300 leading-relaxed">${n.text}</p>
-        </div>
-      `).join('');
-    }
-
-    function addCaseNote(e) {
-      e.preventDefault();
-      const input = document.getElementById('newCaseNoteInput');
+    function saveMentorRemark() {
+      const input = document.getElementById('modalRemarkInput');
       const text = input.value.trim();
-      if (!text || !activeDrawerStudentId) return;
+      if (!text || !activeStudentRoll) return;
 
-      const student = students.find(s => s.id === activeDrawerStudentId);
+      const student = students.find(s => s.rollNo === activeStudentRoll);
       if (!student) return;
 
-      const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      student.notes.unshift({ date: today, author: 'Advisor (You)', text });
-      saveState();
+      student.remark = text;
+      saveStudents();
       input.value = '';
-      renderDrawerNotes(student);
-      showToast('Case note logged to student timeline.', 'amber');
+
+      const savedRemarkEl = document.getElementById('modalSavedRemark');
+      savedRemarkEl.textContent = `Saved Note: "${student.remark}"`;
+      savedRemarkEl.classList.remove('hidden');
+      showToast('Mentor remark saved.', 'emerald');
     }
 
-    function sendDrawerStudentToSimulator() {
-      const id = activeDrawerStudentId;
-      closeStudentDrawer();
-      switchView('simulator');
-      const select = document.getElementById('simPresetSelect');
-      select.value = id;
-      loadStudentIntoSimulator(id);
-    }
-
-    // -----------------------------------------------------------------------
-    // LIVE RISK SIMULATOR (EXPLAINABLE AI / SHAP WATERFALL)
-    // -----------------------------------------------------------------------
-    function populateSimulatorPresets() {
-      const select = document.getElementById('simPresetSelect');
-      select.innerHTML = `<option value="">Load student profile into simulator...</option>` +
-        students.map(s => `<option value="${s.id}">${s.name} (${s.id})</option>`).join('');
-    }
-
-    function loadStudentIntoSimulator(studentId) {
-      const s = students.find(st => st.id === studentId);
-      if (!s) return;
-      document.getElementById('simAttendance').value = s.attendance;
-      document.getElementById('simGpa').value = s.gpa;
-      document.getElementById('simLms').value = s.lmsLogins;
-      document.getElementById('simAssignments').value = s.assignments;
-      document.getElementById('simFinancialHold').checked = s.financialHold;
-      document.getElementById('simMentorActive').checked = s.mentorActive;
-      updateSimulator();
-      showToast(`Loaded ${s.name}'s live telemetry into XAI Simulator.`, 'sky');
-    }
-
-    function updateSimulator() {
-      const attendance = Number(document.getElementById('simAttendance').value);
-      const gpa = Number(document.getElementById('simGpa').value);
-      const lmsLogins = Number(document.getElementById('simLms').value);
-      const assignments = Number(document.getElementById('simAssignments').value);
-      const financialHold = document.getElementById('simFinancialHold').checked;
-      const mentorActive = document.getElementById('simMentorActive').checked;
-
-      document.getElementById('simAttendanceVal').textContent = `${attendance}%`;
-      document.getElementById('simGpaVal').textContent = gpa.toFixed(2);
-      document.getElementById('simLmsVal').textContent = `${lmsLogins} logins/wk`;
-      document.getElementById('simAssignmentsVal').textContent = `${assignments}%`;
-
-      const profile = calculateRiskProfile({
-        attendance, gpa, lmsLogins, assignments, financialHold, mentorActive
-      });
-
-      // Update Gauge SVG
-      const circumference = 2 * Math.PI * 64; // ~402.12
-      const offset = circumference - (profile.score / 100) * circumference;
-      const arc = document.getElementById('simGaugeArc');
-      arc.style.strokeDashoffset = offset;
-
-      const colorMap = {
-        Critical: '#F43F5E',
-        Elevated: '#F59E0B',
-        Watch: '#38BDF8',
-        Stable: '#10B981'
-      };
-      arc.style.stroke = colorMap[profile.tier];
-
-      document.getElementById('simScoreDisplay').textContent = profile.score;
-      const badge = document.getElementById('simTierBadge');
-      badge.textContent = profile.tier.toUpperCase();
-      badge.className = `mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${
-        profile.tier === 'Critical' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' :
-        profile.tier === 'Elevated' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-        profile.tier === 'Watch' ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' :
-        'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-      }`;
-
-      // Render SHAP Contribution Bars
-      const waterfall = document.getElementById('shapWaterfallContainer');
-      waterfall.innerHTML = profile.contributions.map(c => {
-        const isNegative = c.pts < 0;
-        const barWidth = Math.min(100, Math.abs(c.pts) * 3.2);
-        const barColor = isNegative ? 'bg-emerald-400' : c.pts > 10 ? 'bg-rose-500' : 'bg-amber-400';
-        const textColor = isNegative ? 'text-emerald-400' : c.pts > 0 ? 'text-rose-300' : 'text-slate-500';
-        return `
-          <div>
-            <div class="flex justify-between text-[11px] font-mono mb-0.5">
-              <span class="text-slate-300">${c.key}</span>
-              <span class="${textColor} font-bold">${c.pts > 0 ? '+' + c.pts : c.pts} pts</span>
-            </div>
-            <div class="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
-              <div class="h-full ${barColor} transition-all duration-200" style="width: ${barWidth}%"></div>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      // Dynamic Intervention Playbook
-      const playbooks = [];
-      if (attendance < 75) {
-        playbooks.push('Trigger Tier-1 Attendance Outreach: Schedule in-person advisor check-in within 48 hours to uncover transportation, health, or work conflicts.');
-      }
-      if (financialHold) {
-        playbooks.push('Bursar & Financial Aid Escalation: Refer student for micro-grant eligibility or installment plan restructuring before drop-for-nonpayment deadline.');
-      }
-      if (lmsLogins < 5) {
-        playbooks.push('Digital Engagement Nudge: Send automated LMS study schedule & connect student with course TA office hours.');
-      }
-      if (gpa < 2.5 || assignments < 75) {
-        playbooks.push('Academic Recovery Plan: Enroll student in structured peer tutoring & negotiate milestone deadlines for missing coursework.');
-      }
-      if (!mentorActive && profile.score >= 50) {
-        playbooks.push('Protective Buffer Activation: Assign a trained Peer Mentor (-6 pts modeled risk reduction).');
-      }
-      if (playbooks.length === 0) {
-        playbooks.push('Maintain Standard Cadence: Student telemetry is healthy. Share leadership, honors, or undergraduate research opportunities.');
-      }
-
-      document.getElementById('simPlaybookList').innerHTML = playbooks.map(p => `
-        <li class="flex items-start gap-2.5 p-2.5 rounded-xl bg-obsidian-900/90 border border-slate-800/80">
-          <span class="text-amber-400 font-bold mt-0.5">→</span>
-          <span class="leading-relaxed">${p}</span>
-        </li>
-      `).join('');
-    }
-
-    // -----------------------------------------------------------------------
-    // ADD STUDENT MODAL & CSV IMPORT / EXPORT
-    // -----------------------------------------------------------------------
-    function openAddStudentModal() {
-      const modal = document.getElementById('addStudentModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closeAddStudentModal() {
-      const modal = document.getElementById('addStudentModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-
-    function handleAddStudentSubmit(e) {
-      e.preventDefault();
-      const name = document.getElementById('addName').value.trim();
-      const major = document.getElementById('addMajor').value.trim();
-      const attendance = Number(document.getElementById('addAttendance').value);
-      const gpa = Number(document.getElementById('addGpa').value);
-      const lmsLogins = Number(document.getElementById('addLms').value);
-      const assignments = Number(document.getElementById('addAssignments').value);
-      const financialHold = document.getElementById('addFinancialHold').checked;
-
-      const nextNum = 1200 + students.length;
-      const newStudent = {
-        id: `STU-${nextNum}`,
-        name,
-        major,
-        year: 'Freshman',
-        attendance,
-        gpa,
-        lmsLogins,
-        assignments,
-        financialHold,
-        mentorActive: false,
-        weeklyAttendance: Array.from({ length: 12 }, (_, i) => Math.max(40, Math.min(100, Math.round(attendance + (11 - i) * 1.2)))),
-        weeklyScores: Array.from({ length: 12 }, (_, i) => Math.max(40, Math.min(100, Math.round(assignments + (11 - i) * 1.1)))),
-        interventions: [
-          { id: 'i1', text: 'Schedule initial 1-on-1 Advisor onboarding check-in', done: false },
-          { id: 'i2', text: financialHold ? 'Resolve active Financial Aid / Bursar hold' : 'Verify course load & peer mentor match', done: false }
-        ],
-        notes: [
-          { date: 'Today', author: 'Advisor (You)', text: 'Enrolled into BeaconEWS monitoring cohort.' }
-        ]
-      };
-
-      students.unshift(newStudent);
-      saveState();
-      closeAddStudentModal();
-      e.target.reset();
-      refreshAllUI();
-      showToast(`${name} enrolled & scored by BeaconEWS.`, 'emerald');
-    }
-
-    function exportCohortCSV() {
-      const headers = ['ID', 'Name', 'Major', 'Year', 'RiskScore', 'RiskTier', 'AttendancePct', 'GPA', 'LMSLoginsPerWk', 'AssignmentsPct', 'FinancialHold', 'PrimaryDrivers'];
+    // ---------------------------------------------------------------------
+    // EXPORT CSV REPORT
+    // ---------------------------------------------------------------------
+    function exportToCSV() {
+      const headers = ['RollNo', 'Name', 'Department', 'AttendancePct', 'CGPA', 'AssignmentsPct', 'RiskScorePct', 'RiskLevel', 'KeyFactor', 'MentorRemark'];
       const rows = students.map(s => {
-        const r = calculateRiskProfile(s);
+        const r = calculateStudentRisk(s);
         return [
-          s.id,
+          s.rollNo,
           `"${s.name}"`,
-          `"${s.major}"`,
-          s.year,
-          r.score,
-          r.tier,
+          s.dept,
           s.attendance,
-          Number(s.gpa).toFixed(2),
-          s.lmsLogins,
+          Number(s.cgpa).toFixed(1),
           s.assignments,
-          s.financialHold,
-          `"${r.drivers.join('; ')}"`
+          r.score,
+          r.level,
+          `"${r.keyFactor}"`,
+          `"${s.remark || ''}"`
         ].join(',');
       });
 
-      const csvContent = [headers.join(','), ...rows].join('\n');
-      triggerDownload(csvContent, `BeaconEWS_Watchlist_${new Date().toISOString().slice(0, 10)}.csv`);
-      showToast('Exported timestamped Watchlist CSV report.', 'emerald');
-    }
-
-    function downloadSampleCSVTemplate() {
-      const sample = [
-        'id,name,major,year,attendance,gpa,lmsLogins,assignments,financialHold',
-        'STU-2001,Elena Rostova,Computer Science,Sophomore,62,2.10,2,58,true',
-        'STU-2002,Marcus Vance,Mechanical Eng,Freshman,71,2.45,5,70,false',
-        'STU-2003,Nadia Benali,Biochemistry,Junior,93,3.68,14,95,false'
-      ].join('\n');
-      triggerDownload(sample, 'BeaconEWS_Sample_Template.csv');
-      showToast('Sample CSV template downloaded.', 'amber');
-    }
-
-    function triggerDownload(content, filename) {
-      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = filename;
+      a.download = `EduGuard_Dropout_Risk_Report_${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      showToast('Downloaded CSV report for faculty review.', 'emerald');
     }
 
-    function handleCSVUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        try {
-          const lines = e.target.result.split(/\r?\n/).filter(l => l.trim().length > 0);
-          if (lines.length < 2) throw new Error('CSV has no data rows.');
-
-          let importedCount = 0;
-          for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
-            if (cols.length < 8) continue;
-
-            const [id, name, major, year, att, gpa, lms, assign, hold] = cols;
-            const attendance = Math.min(100, Math.max(0, Number(att) || 75));
-            const gpaNum = Math.min(4, Math.max(0, Number(gpa) || 2.5));
-            const lmsNum = Math.max(0, Number(lms) || 5);
-            const assignNum = Math.min(100, Math.max(0, Number(assign) || 75));
-            const hasHold = String(hold).toLowerCase() === 'true';
-
-            students.unshift({
-              id: id || `STU-${3000 + i}`,
-              name: name || `Student ${i}`,
-              major: major || 'Undeclared',
-              year: year || 'Freshman',
-              attendance,
-              gpa: gpaNum,
-              lmsLogins: lmsNum,
-              assignments: assignNum,
-              financialHold: hasHold,
-              mentorActive: false,
-              weeklyAttendance: Array.from({ length: 12 }, () => attendance),
-              weeklyScores: Array.from({ length: 12 }, () => assignNum),
-              interventions: [
-                { id: 'i1', text: 'Initial CSV import triage & advisor review', done: false }
-              ],
-              notes: [
-                { date: 'Imported', author: 'Batch CSV', text: 'Ingested via static CSV batch importer.' }
-              ]
-            });
-            importedCount++;
-          }
-
-          saveState();
-          refreshAllUI();
-          switchView('overview');
-          showToast(`Successfully imported & scored ${importedCount} student records.`, 'emerald');
-        } catch (err) {
-          showToast('Could not parse CSV. Please check the sample template format.', 'rose');
-        }
-        event.target.value = '';
-      };
-      reader.readAsText(file);
-    }
-
-    // -----------------------------------------------------------------------
-    // TOAST NOTIFICATION HELPER (NO ALERT())
-    // -----------------------------------------------------------------------
-    function showToast(message, tone = 'amber') {
+    // ---------------------------------------------------------------------
+    // CLEAN TOAST NOTIFICATION (NO ALERT())
+    // ---------------------------------------------------------------------
+    function showToast(msg, tone = 'indigo') {
       const container = document.getElementById('toastContainer');
-      const borderMap = {
-        amber: 'border-amber-500/40 text-amber-200',
-        emerald: 'border-emerald-500/40 text-emerald-200',
-        sky: 'border-sky-500/40 text-sky-200',
-        rose: 'border-rose-500/40 text-rose-200'
+      const colorMap = {
+        indigo: 'border-indigo-200 bg-white text-indigo-800',
+        emerald: 'border-emerald-200 bg-white text-emerald-800',
+        slate: 'border-slate-200 bg-white text-slate-800'
       };
-      const toast = document.createElement('div');
-      toast.className = `pointer-events-auto px-4 py-3 rounded-xl glass-panel border ${borderMap[tone]} text-xs font-semibold shadow-xl transition-all duration-300 translate-y-2 opacity-0`;
-      toast.textContent = message;
-      container.appendChild(toast);
+      const el = document.createElement('div');
+      el.className = `pointer-events-auto px-4 py-2.5 rounded-xl border shadow-lg text-xs font-semibold transition-all duration-300 opacity-0 translate-y-2 ${colorMap[tone]}`;
+      el.textContent = msg;
+      container.appendChild(el);
 
-      requestAnimationFrame(() => {
-        toast.classList.remove('translate-y-2', 'opacity-0');
-      });
-
+      requestAnimationFrame(() => el.classList.remove('opacity-0', 'translate-y-2'));
       setTimeout(() => {
-        toast.classList.add('opacity-0', 'translate-y-2');
-        setTimeout(() => toast.remove(), 300);
-      }, 3200);
+        el.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => el.remove(), 300);
+      }, 2800);
     }
 
-    function refreshAllUI() {
-      renderKPIsAndCharts();
-      renderWatchlist();
-      populateSimulatorPresets();
-      updateSimulator();
-    }
-
-    // Resize listener for responsive Canvas radar
-    window.addEventListener('resize', () => {
-      if (!document.getElementById('view-overview').classList.contains('hidden')) {
-        drawTelemetryRadar();
-      }
-    });
-
+    // Initialize Dashboard on Page Load
     window.addEventListener('DOMContentLoaded', () => {
-      loadState();
-      refreshAllUI();
+      loadStudents();
+      updateLiveCalculator();
+      renderAll();
     });
   </script>
 </body>
